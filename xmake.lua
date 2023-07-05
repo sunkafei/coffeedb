@@ -2,8 +2,9 @@ add_rules("mode.debug", "mode.release")
 
 target("coffeedb")
     set_kind("binary")
-    add_files("src/*.cpp", "src/*.ixx")
-    set_languages("c++20")
+    add_files("src/*.cpp")
+    set_languages("c++23")
+    add_includedirs("package")
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io

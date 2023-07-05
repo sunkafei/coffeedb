@@ -1,5 +1,8 @@
 .xmake/
 build/
+.vscode/
+data/
 .DS_Store
-.vscode
+coffeedb.code-workspace
+
 
