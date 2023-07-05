@@ -4,12 +4,14 @@
 auto main(int argc, char** argv) -> int {
     using namespace nlohmann::literals;
     json a;
+    init();
     evaluate(R"(
     {
-        "type": "insert",
+        "operation": "insert",
         "data": {
             "A": 123,
-            "B": "qwe"
+            "B": "qwe孙明志",
+            "C": 3.14
         }
     }
     )"_json);

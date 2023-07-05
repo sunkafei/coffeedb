@@ -2,8 +2,6 @@
 #define UTILITY_GUARD
 #include <iostream>
 #include <string>
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
 auto output(const auto& param) {
     if constexpr (requires {param.first; param.second; }) {
         std::cerr << '(' << param.first << ' ' << param.second << ')';
@@ -31,5 +29,4 @@ auto print(const auto&... params) {
     (... , (output(params), std::cerr << ' '));
     std::cerr << "\033[0m" << std::endl; 
 }
-inline std::string directory = "data/";
 #endif
