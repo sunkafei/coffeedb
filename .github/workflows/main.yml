@@ -13,9 +13,7 @@ jobs:
           - run: sudo add-apt-repository ppa:xmake-io/xmake
           - run: sudo apt update
           - run: sudo apt install xmake
-          - run: adduser tmp
-          - run: chown -R tmp /home/tmp
-          - run: su tmp
+          - run: pwd
           - run: xmake -rv
             
           
