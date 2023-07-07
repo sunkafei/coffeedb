@@ -16,6 +16,8 @@ jobs:
           - run: pwd
           - run: gcc -v
           - run: which gcc
+          - run: sudo rm /usr/bin/gcc
+          - run: sudo ln -s /usr/local/bin/gcc /usr/bin/gcc
           - run: xmake -rv
             
           
