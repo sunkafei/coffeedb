@@ -11,14 +11,17 @@ jobs:
             with:
                 version: '13'
                 platform: x64
-          - run: sudo add-apt-repository ppa:xmake-io/xmake
-          - run: sudo apt update
-          - run: sudo apt install xmake
-          - run: pwd
-          - run: gcc -v
-          - run: which gcc
-          - run: sudo rm /usr/bin/gcc
-          - run: sudo ln -s /usr/local/bin/gcc /usr/bin/gcc
-          - run: xmake -rv
+          - name: Install xmake
+            run: |
+                sudo add-apt-repository ppa:xmake-io/xmake
+                sudo apt update
+                sudo apt install xmake
+                pwd
+                gcc -v
+                which gcc
+                sudo rm /usr/bin/gcc
+                sudo ln -s /usr/local/bin/gcc /usr/bin/gcc
+          - name: Compile Coffeedb
+            run: xmake -rv
             
           
