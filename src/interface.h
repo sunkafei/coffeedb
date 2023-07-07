@@ -4,5 +4,5 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 void init();
-void evaluate(const json &command);
+std::string response(const json &command);
 #endif

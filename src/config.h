@@ -3,9 +3,9 @@
 #include <string>
 #include <variant>
 #include <cstdint>
-using var = std::variant<int64_t, double, std::u32string>;
-inline std::string storage_location = "./";
+#include <filesystem>
+using var = std::variant<int64_t, double, std::string>;
+inline std::string storage_location = std::filesystem::current_path().string() + "/";
 inline std::string backup_directory = "backup/";
 inline std::string raw_directory = "raw/";
-enum class type : int8_t {integer, real, string};
 #endif
