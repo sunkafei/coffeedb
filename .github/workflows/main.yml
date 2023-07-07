@@ -1,0 +1,23 @@
+name: Build and test
+on: [push]
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+          - name: Install GCC
+            uses: egor-tensin/setup-gcc@v1.3
+            with:
+                version: '13'
+                platform: x64
+          - run: sudo add-apt-repository ppa:xmake-io/xmake
+          - run: sudo apt update
+          - run: sudo apt install xmake
+          - run: pwd
+          - run: gcc -v
+          - run: which gcc
+          - run: sudo rm /usr/bin/gcc
+          - run: sudo ln -s /usr/local/bin/gcc /usr/bin/gcc
+          - run: xmake -rv
+            
+          
