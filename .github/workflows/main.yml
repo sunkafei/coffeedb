@@ -14,6 +14,7 @@ jobs:
           - run: sudo apt update
           - run: sudo apt install xmake
           - run: pwd
+          - run: gcc -v
           - run: xmake -rv
             
           
