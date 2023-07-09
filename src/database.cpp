@@ -9,6 +9,7 @@
 #include <memory>
 #include <format>
 #include <unordered_map>
+#include <algorithm>
 #include "config.h"
 #include "utility.h"
 #include "index.h"
@@ -174,7 +175,7 @@ std::vector<std::vector<std::pair<const std::string, var>>> select(const std::ve
             }
         }
         if (object.size()) {
-            if (correlation) {
+            if (correlation && (keys.empty() || std::find(keys.cbegin(), keys.cend(), key_correlation) != keys.end())) {
                 object.emplace_back(key_correlation, correlation);
             }
             ret.push_back(std::move(object));

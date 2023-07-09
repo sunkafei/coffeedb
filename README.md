@@ -77,7 +77,7 @@ In the case of string/keyword searches, an additional key named `$correlation` i
 ```
 The query result is:
 ```json
-[{"number":123,"name":"sunkafei","secret":"01010","$correlation":2},{"number": 234,"name": "yulemao","position": 1.7724,"secret": "010","$correlation":1}]
+[{"$correlation":2,"number":123,"name":"sunkafei","secret":"01010"},{"$correlation":1,"number":234,"name":"yulemao","position":1.7724,"secret":"010"}]
 ```
 If there are multiple query conditions that need to be met, you can simply list them in `data`. For example:
 ```json
