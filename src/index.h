@@ -4,7 +4,7 @@
 #include <vector>
 class index {
 public:
-    virtual std::vector<int64_t> query(const std::string &range) {
+    virtual std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) {
         throw std::logic_error("Unimplemented method index::query");
     }
     virtual void build() {
@@ -18,7 +18,7 @@ public:
     static constexpr int8_t number = 0;
     void add(int64_t id, int64_t value);
     void build() override;
-    std::vector<int64_t> query(const std::string &range) override;
+    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) override;
 };
 class double_index : public index {
 private:
@@ -27,7 +27,7 @@ public:
     static constexpr int8_t number = 1;
     void add(int64_t id, double value);
     void build() override;
-    std::vector<int64_t> query(const std::string &range) override;
+    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) override;
 };
 class string_index : public index {
 private:
@@ -36,6 +36,6 @@ public:
     static constexpr int8_t number = 2;
     void add(int64_t id, const std::string &value);
     void build() override;
-    std::vector<int64_t> query(const std::string &range) override;
+    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) override;
 };
 #endif

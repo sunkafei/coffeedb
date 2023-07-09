@@ -12,6 +12,7 @@
 #include "config.h"
 #include "utility.h"
 #include "index.h"
+constexpr std::string key_correlation("$correlation");
 std::map<std::string, std::unique_ptr<index>> indices;
 std::unordered_map<int64_t, std::map<std::string, var>> data;
 void build() {
@@ -147,34 +148,35 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
         }, value);
     }
     fclose(fp);
-
-    build();
 }
-std::vector<int64_t> query(const std::string& key, const std::string& range) {
+std::vector<std::pair<int64_t, int64_t>> query(const std::string& key, const std::string& range) {
     if (!indices.count(key)) {
         return {};
     }
     auto result = indices[key]->query(range);
     return result;
 }
-std::vector<std::vector<std::pair<const std::string, var>*>> select(const std::vector<int64_t>& ids, const std::vector<std::string> &keys) {
-    std::vector<std::vector<std::pair<const std::string, var>*>> ret;
-    for (auto id : ids) {
-        std::vector<std::pair<const std::string, var>*> object;
+std::vector<std::vector<std::pair<const std::string, var>>> select(const std::vector<std::pair<int64_t, int64_t>>& results, const std::vector<std::string> &keys) {
+    std::vector<std::vector<std::pair<const std::string, var>>> ret;
+    for (auto [id, correlation] : results) {
+        std::vector<std::pair<const std::string, var>> object;
         if (keys.size()) {
             for (const auto &key : keys) {
                 auto iter = data[id].find(key);
                 if (iter != data[id].end()) {
-                    object.push_back(&*iter);
+                    object.push_back(*iter);
                 }
             }
         }
         else {
             for (auto iter = data[id].begin(); iter != data[id].end(); ++iter) {
-                object.push_back(&*iter);
+                object.push_back(*iter);
             }
         }
         if (object.size()) {
+            if (correlation) {
+                object.emplace_back(key_correlation, correlation);
+            }
             ret.push_back(std::move(object));
         }
     }

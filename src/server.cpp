@@ -1,14 +1,17 @@
 #include <stdexcept>
 #include <format>
 #include <httplib.h>
-#include "interface.h"
 #include "config.h"
+#include "interface.h"
+#include "database.h"
 httplib::Server server;
 void start_server(int port, const std::string &directory) {
+    print("Starting CoffeeDB ...");
+    init();
+    build();
     print(std::format("Working directory: {}", storage_location));
     print(std::format("Running at 127.0.0.1:{}/{}", port, directory));
-    init();
-    server.Get("/" + directory, [](const httplib::Request &req, httplib::Response &res) {
+    server.Post("/" + directory, [](const httplib::Request &req, httplib::Response &res) {
         json input = json::parse(req.get_param_value("json"));
         try {
             std::string reply = response(input);

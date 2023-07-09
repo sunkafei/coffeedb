@@ -30,7 +30,7 @@ void double_index::build() {
 void string_index::build() {
     
 }
-std::vector<int64_t> numeric_query(const auto &data, const std::string &range) {
+std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const std::string &range) {
     using T = std::decay_t<decltype(data[0].first)>;
     std::pair<T, int64_t> L = {}, R = {};
     std::smatch result;
@@ -49,26 +49,35 @@ std::vector<int64_t> numeric_query(const auto &data, const std::string &range) {
     }
     auto begin = std::lower_bound(data.begin(), data.end(), L);
     auto end = std::lower_bound(data.begin(), data.end(), R);
-    std::vector<int64_t> ret;
+    std::vector<std::pair<int64_t, int64_t>> ret;
     ret.reserve(end - begin);
     for (auto iter = begin; iter != end; ++iter) {
-        ret.push_back(iter->second);
+        ret.emplace_back(iter->second, 0);
     }
-    print(ret.size(), ret);
     return ret;
 }
-std::vector<int64_t> integer_index::query(const std::string &range) {
+std::vector<std::pair<int64_t, int64_t>> integer_index::query(const std::string &range) {
     return numeric_query(data, range);
 }
-std::vector<int64_t> double_index::query(const std::string &range) {
+std::vector<std::pair<int64_t, int64_t>> double_index::query(const std::string &range) {
     return numeric_query(data, range);
 }
-std::vector<int64_t> string_index::query(const std::string &range) {
+std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &range) {
     auto u32str = conv32.from_bytes(range); //UTF-8 to UTF-32
-    std::vector<int64_t> ret;
+    std::vector<std::pair<int64_t, int64_t>> ret;
     for (const auto [content, id] : data) {
-        if (std::search(content.begin(), content.end(), u32str.begin(), u32str.end()) != content.end()) {
-            ret.push_back(id);
+        auto iter = content.begin();
+        int correlation = 0;
+        for (;;) {
+            iter = std::search(iter, content.end(), u32str.begin(), u32str.end());
+            if (iter == content.end()) {
+                break;
+            }
+            ++iter;
+            correlation += 1;
+        }
+        if (correlation) {
+            ret.emplace_back(id, correlation);
         }
     }
     return ret;

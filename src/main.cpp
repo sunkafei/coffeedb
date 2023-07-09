@@ -13,7 +13,7 @@ void test() {
         "operation": "insert",
         "data": {
             "A": 100,
-            "B": "qwe孙明志",
+            "B": "010孙咖啡",
             "C": 1.14
         }
     }
@@ -23,16 +23,22 @@ void test() {
         "operation": "insert",
         "data": {
             "A": 200,
-            "B": "123孙明志",
+            "B": "123孙咖啡0101010",
             "C": 2.14
         }
     }
     )"_json);
+    response(R"(
+        {
+            "operation": "build"
+        }
+    )"_json);
     auto result = response(R"(
     {
-        "operation": "query",
+        "operation": "remove",
         "data": {
-            "B": "3孙明志"
+            "A" : "[100,199]",
+            "B": "010"
         },
         "select" : ["A", "B", "C"]
     }
