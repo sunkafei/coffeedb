@@ -177,4 +177,4 @@ For fields of type integer and float, the constraint can be an interval indicati
 |[1,inf)|Values greater than $1$ (inclusive).|
 |[-inf,1)|Values less than $1$ (exclusive).|
 
-You can find some use cases of `query` operations in [Get Started](#get-started).
+You can find some use cases of the `query` operation in [Get Started](#get-started).
