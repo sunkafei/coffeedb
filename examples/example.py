@@ -1,4 +1,7 @@
-# CoffeeDB needs to be started before running this script.
+''' 
+CoffeeDB needs to be started before running this script.
+'''
+# pip install requests
 import requests
 import json
 url = "http://127.0.0.1:14920/coffeedb"
@@ -47,6 +50,7 @@ send({
         "secret": "010"
     }
 })
+# Both conditions about "secret" and "number" must be met.
 send({
     "operation": "query",
     "data": {
