@@ -142,3 +142,39 @@ The `remove` operation has the following general format:
     }
 }
 ```
+where all objects satisfy the constraints will be removed from the database. The format of constraints is the same as the format of constraints in [query](#query) operation. Note that all `remove` operations will be cached and will not take effect immediately. To make `remove` operations effective, you need to call the [build](#build) operation.
+
+### Build
+The `build` operation has the following format:
+```json
+{
+    "operation": "build"
+}
+```
+It makes all database modification operations take effect. As the `build` operation is time-consuming, you should call `build` once after all modifications are completed, rather than calling `build` after each modification.
+
+### Query
+The `query` operation has the following general format:
+```json
+{
+    "operation": "query",
+    "constraints": {
+        ...
+    },
+    "fields": [
+        ...
+    ]
+}
+```
+All obejcts that meet the constraints in `constraints` will be selected, and then the fields in `fields` will be filtered out and returned. You can get all objects in the database by omitting `constraints`, and you can get all fields in objects by omitting `fields`.
+
+For fields of string type, the constraint can be a substring that must appear. In this case, an additional field named `$correlation` will be added to the returned object to indicate the number of occurrences of this substring.
+
+For fields of type integer and float, the constraint can be an interval indicating the range of numbers. For example:
+|Value|Explanation|
+|-|-|
+|[1,100]|Values between $1$ and $100$.|
+|[1,inf)|Values greater than $1$ (inclusive).|
+|[-inf,1)|Values less than $1$ (exclusive).|
+
+You can find some use cases of `query` operations in [Get Started](#get-started).
