@@ -45,14 +45,14 @@ Next, we insert another piece of data into the database:
 As we can seen, different objects can contain different fields, but the same fields must be of the same type. After we finish modifying the database, we need to call the build operation to create the corresponding data structure and make the modification take effect:
 ```json
 {
-    "operation": "build",
+    "operation": "build"
 }
 ```
 Next we can query the database:
 ```json
 {
     "operation": "query",
-    "data": {
+    "constraints": {
         "number": "[100,200]"
     }
 }
@@ -61,14 +61,14 @@ It returns all objects whose *number* is between $100$ and $200$. The result may
 ```json
 [{"number":123,"name":"sunkafei","secret":"01010"}]
 ```
-Note that we can adjust the query to open interval by writing "(100,200)". If you only want to see some keys of the object but not all, you can use `select` to specify. Here's an example:
+Note that we can adjust the query to open interval by writing "(100,200)". If you only want to see some keys of the object but not all, you can use `fields` to specify. Here's an example:
 ```json
 {
     "operation": "query",
-    "data": {
+    "constraints": {
         "number": "[100,900]"
     },
-    "select": ["name"]
+    "fields": ["name"]
 }
 ```
 The query result is:
@@ -79,7 +79,7 @@ In the case of string/keyword searches, an additional key named `$correlation` i
 ```json
 {
     "operation": "query",
-    "data": {
+    "constraints": {
         "secret": "010"
     }
 }
@@ -88,15 +88,15 @@ The query result is:
 ```json
 [{"$correlation":2,"number":123,"name":"sunkafei","secret":"01010"},{"$correlation":1,"number":234,"name":"yulemao","position":1.7724,"secret":"010"}]
 ```
-If there are multiple query conditions that need to be met, you can simply list them in `data`. For example:
+If there are multiple query constraints that need to be met, you can simply list them in `constraints`. For example:
 ```json
 {
     "operation": "query",
-    "data": {
+    "constraints": {
         "secret": "010",
         "number": "[200,900]"
     },
-    "select": ["name"]
+    "fields": ["name"]
 }
 ```
 The query result is:
@@ -113,3 +113,32 @@ You can find a sample Python code [here](examples/examples.py).
 |port|Integer|The port number to bind to.|
 |clear|None|Clear all data before starting the service. Use this command with caution as it will delete all data irretrievably.|
 |directory|String|The folder where the data is saved.|
+
+For example, the following command clear the past data and start service at http://127.0.0.1:12345/coffeedb.
+```bash
+$ ./coffeedb --port=12345 --clear
+```
+
+## Supported Operations
+### Insert
+The `insert` operation has the following general format:
+```json
+{
+    "operation": "insert",
+    "data": {
+        ...
+    }
+}
+```
+where the `data` field contains the object to be inserted. The inserted object can contain any number of key-value pairs. Note that all `insert` operations will be cached and will not take effect immediately. To make `insert` operations effective, you need to call the [build](#build) operation.
+
+### Remove
+The `remove` operation has the following general format:
+```json
+{
+    "operation": "remove",
+    "constraints": {
+        ...
+    }
+}
+```

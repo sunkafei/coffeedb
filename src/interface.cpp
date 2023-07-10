@@ -90,13 +90,13 @@ std::string response(const json &command) {
         return "";
     }
     else if (operation == "query") {
-        auto data = command.at("data");
-        auto result = filter(data);
-        std::vector<std::string> keys;
-        if (command.contains("select")) {
-            keys = command["select"].template get<std::vector<std::string>>();
+        auto constraints = command.at("constraints");
+        auto result = filter(constraints);
+        std::vector<std::string> fields;
+        if (command.contains("fields")) {
+            fields = command["fields"].template get<std::vector<std::string>>();
         }
-        auto list = select(result, keys);
+        auto list = select(result, fields);
         auto ret = json::array();;
         for (const auto &object : list) {
             ret.push_back(jsonify(object));
@@ -104,8 +104,8 @@ std::string response(const json &command) {
         return ret.dump();
     }
     else if (operation == "remove") {
-        auto data = command.at("data");
-        auto result = filter(data);
+        auto constraints = command.at("constraints");
+        auto result = filter(constraints);
         for (auto [id, _] : result) {
             std::filesystem::remove(storage_location + raw_directory + std::format("{}", id));
         }

@@ -29,33 +29,33 @@ send({
     }
 })
 send({
-    "operation": "build",
+    "operation": "build"
 })
 send({
     "operation": "query",
-    "data": {
+    "constraints": {
         "number": "[100,200]"
     }
 })
 send({
     "operation": "query",
-    "data": {
+    "constraints": {
         "number": "[100,900]"
     },
-    "select": ["name"]
+    "fields": ["name"]
 })
 send({
     "operation": "query",
-    "data": {
+    "constraints": {
         "secret": "010"
     }
 })
 # Both conditions about "secret" and "number" must be met.
 send({
     "operation": "query",
-    "data": {
+    "constraints": {
         "secret": "010",
         "number": "[200,900]"
     },
-    "select": ["name"]
+    "fields": ["name"]
 })
