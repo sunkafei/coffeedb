@@ -183,3 +183,7 @@ std::vector<std::vector<std::pair<const std::string, var>>> select(const std::ve
     }
     return ret;
 }
+void clear() {
+    std::filesystem::remove_all(storage_location + raw_directory);
+    std::filesystem::create_directory(storage_location + raw_directory);
+}

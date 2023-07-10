@@ -113,6 +113,9 @@ std::string response(const json &command) {
     else if (operation == "build") {
         build();
     }
+    else if (operation == "clear") {
+        clear();
+    }
     else {
         throw std::runtime_error("Invalid query type: " + operation);
     }

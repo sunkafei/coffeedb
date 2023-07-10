@@ -1,9 +1,18 @@
 ![](docs/logo.png)
 ![](https://github.com/sunkafei/coffeedb/actions/workflows/main.yml/badge.svg?event=push)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/nlohmann/json/master/LICENSE.MIT)
-[![GitHub Downloads](https://img.shields.io/github/downloads/nlohmann/json/total)](https://github.com/sunkafei/coffeedb/releases)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/sunkafei/coffeedb/main/LICENSE.MIT)
+[![GitHub Downloads](https://img.shields.io/github/downloads/sunkafei/coffeedb/total)](https://github.com/sunkafei/coffeedb/releases)
+[![GitHub stars](https://img.shields.io/github/stars/sunkafei/coffeedb)](https://github.com/sunkafei/coffeedb/stargazers)
 
-**CoffeeDB** is an easy-to-use string/keyword search database. CoffeeDB builds indexes for numeric data and generalized suffix automata for text data to speed up query operations. Unlike most existing databases, CoffeeDB maintains these data structures in memory. On the one hand, this significantly improves the query speed, on the other hand, it also limits its ability to handle very large-scale data. If the data you need to retrieve does not exceed tens of gigabytes, then CoffeeDB may be the best practice you want.
+**CoffeeDB** is an out-of-the-box string/keyword search database. CoffeeDB builds indexes for numeric data and generalized suffix automata for text data to speed up query operations. Unlike most existing databases, CoffeeDB maintains these data structures in memory. On the one hand, this significantly improves the query speed, on the other hand, it also limits its ability to handle very large-scale data. If the data you need to retrieve does not exceed tens of gigabytes, then CoffeeDB may be the best practice you want.
+
+- [Get Started](#get-started)
+- [Run CoffeeDB](#run-coffeedb)
+- [Supported Operations](#supported-operations)
+  - [Insert](#insert)
+  - [Remove](#remove)
+  - [Build](#build)
+  - [Query](#query)
 
 ## Get Started
 [Download](https://github.com/sunkafei/coffeedb/releases) CoffeeDB, put it under any folder, run `./coffeedb`, then CoffeeDB will create a database under this folder and start the service. By default, the service address is http://127.0.0.1:14920/coffeedb. All database operations are handled by the Post method of this address.
@@ -95,3 +104,12 @@ The query result is:
 [{"name":"yulemao"}]
 ```
 You can find a sample Python code [here](examples/examples.py).
+
+## Run CoffeeDB
+[Download](https://github.com/sunkafei/coffeedb/releases) CoffeeDB, put it under any folder, run `./coffeedb`, then CoffeeDB will create a database under this folder and start the service. By default, the service address is http://127.0.0.1:14920/coffeedb. All database operations are handled by the Post method of this address. You can change CoffeeDB's default behavior with the following command-line parameters:
+
+|Key|Value Type|Explanation|
+|-|-|-|
+|port|Integer|The port number to bind to.|
+|clear|None|Clear all data before starting the service. Use this command with caution as it will delete all data irretrievably.|
+|directory|String|The folder where the data is saved.|

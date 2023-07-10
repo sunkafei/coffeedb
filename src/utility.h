@@ -39,6 +39,11 @@ auto print(auto&&... params) {
     (... , (output(std::forward<decltype(params)>(params)), std::cerr << ' '));
     std::cerr << "\033[0m" << std::endl; 
 }
+auto error(auto&&... params) {
+    std::cerr << "\033[1;31m";
+    (... , (output(std::forward<decltype(params)>(params)), std::cerr << ' '));
+    std::cerr << "\033[0m" << std::endl; 
+}
 auto value_conv(std::string str, auto &value) {
     using T = std::remove_reference_t<decltype(value)>;
     for (auto &c : str) {

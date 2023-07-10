@@ -1,7 +1,9 @@
-#include <stdio.h>
+#include <stdexcept>
+#include <format>
 #include "utility.h"
 #include "interface.h"
 #include "server.h"
+#include "command.h"
 void test() {
     using namespace nlohmann::literals;
     system("rm -r backup");
@@ -45,8 +47,15 @@ void test() {
     )"_json);
     print(result);
 }
-int main() {
-    //test();
-    start_server();
+int main(int argc, char *argv[]) {
+    try {
+        parse_command(argc, argv);
+        //test();
+        start_server();
+    }
+    catch (std::exception &e) {
+        std::string message = std::format("[Error] {}.", e.what());
+        error(message);
+    }
     return 0;
 }
