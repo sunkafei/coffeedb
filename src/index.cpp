@@ -18,8 +18,7 @@ void double_index::add(int64_t id, double value) {
     data.emplace_back(value, id);
 }
 void string_index::add(int64_t id, const std::string &value) {
-    auto u32str = conv32.from_bytes(value); //UTF-8 to UTF-32
-    data.emplace_back(u32str, id);
+    data.emplace_back(value, id);
 }
 void integer_index::build() {
     std::sort(data.begin(), data.end());
@@ -62,14 +61,13 @@ std::vector<std::pair<int64_t, int64_t>> integer_index::query(const std::string 
 std::vector<std::pair<int64_t, int64_t>> double_index::query(const std::string &range) {
     return numeric_query(data, range);
 }
-std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &range) {
-    auto u32str = conv32.from_bytes(range); //UTF-8 to UTF-32
+std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &keyword) {
     std::vector<std::pair<int64_t, int64_t>> ret;
     for (const auto [content, id] : data) {
         auto iter = content.begin();
         int correlation = 0;
         for (;;) {
-            iter = std::search(iter, content.end(), u32str.begin(), u32str.end());
+            iter = std::search(iter, content.end(), keyword.begin(), keyword.end());
             if (iter == content.end()) {
                 break;
             }

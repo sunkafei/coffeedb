@@ -4,6 +4,7 @@
 #include "interface.h"
 #include "server.h"
 #include "command.h"
+#include "profile.h"
 void test() {
     using namespace nlohmann::literals;
     system("rm -r backup");
@@ -50,7 +51,8 @@ int main(int argc, char *argv[]) {
     try {
         parse_command(argc, argv);
         //test();
-        start_server();
+        profile_string_process();
+        //start_server();
     }
     catch (std::exception &e) {
         std::string message = std::format("[Error] {}.", e.what());

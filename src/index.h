@@ -31,7 +31,7 @@ public:
 };
 class string_index : public index {
 private:
-    std::vector<std::pair<std::u32string, int64_t>> data;
+    std::vector<std::pair<std::string, int64_t>> data;
 public:
     static constexpr int8_t number = 2;
     void add(int64_t id, const std::string &value);
