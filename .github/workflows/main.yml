@@ -33,8 +33,10 @@ jobs:
             run: xmake -rv
           - name: Start Coffeedb
             run: nohup build/linux/x86_64/release/coffeedb &
-          - name: Test Examples
-            run: python examples/example.py
+          - name: Test
+            run: |
+              python examples/example.py
+              python test/test-string.py
           
             
           

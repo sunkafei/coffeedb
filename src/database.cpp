@@ -174,10 +174,10 @@ std::vector<std::vector<std::pair<const std::string, var>>> select(const std::ve
                 object.push_back(*iter);
             }
         }
+        if (correlation && (keys.empty() || std::find(keys.cbegin(), keys.cend(), key_correlation) != keys.end())) {
+            object.emplace_back(key_correlation, correlation);
+        }
         if (object.size()) {
-            if (correlation && (keys.empty() || std::find(keys.cbegin(), keys.cend(), key_correlation) != keys.end())) {
-                object.emplace_back(key_correlation, correlation);
-            }
             ret.push_back(std::move(object));
         }
     }

@@ -37,12 +37,11 @@ void test() {
     )"_json);
     auto result = response(R"(
     {
-        "operation": "remove",
-        "data": {
-            "A" : "[100,199]",
+        "operation": "query",
+        "constraints": {
             "B": "010"
         },
-        "select" : ["A", "B", "C"]
+        "fields": ["$correlation", "A"]
     }
     )"_json);
     print(result);
