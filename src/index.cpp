@@ -99,37 +99,32 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
     }
     return ret;*/
     std::string_view keyword_view(keyword);
-    uint64_t left, right;
-    {
-        uint64_t L = 0, R = sa.size() - 1;
-        while (L < R) {
-            uint64_t M = L + (R - L) / 2;
-            auto i = sa[M];
-            std::string_view content(data[i.index1].begin() + i.index2, data[i.index1].end());
-            if (keyword_view <= content) {
-                R = M;
-            }
-            else {
-                L = M + 1;
-            }
+    uint64_t L = 0, R = sa.size() - 1;
+    while (L < R) {
+        uint64_t M = L + (R - L) / 2;
+        auto i = sa[M];
+        std::string_view content(data[i.index1].begin() + i.index2, data[i.index1].end());
+        if (keyword_view <= content) {
+            R = M;
         }
-        left = L;
-    }
-    {
-        uint64_t L = left - 1, R = sa.size() - 1;
-        while (L < R) {
-            int M = L + (R - L + 1) / 2;
-            auto i = sa[M];
-            std::string_view content(data[i.index1].begin() + i.index2, data[i.index1].end());
-            if (content.size() >= keyword_view.size() && keyword_view == content.substr(0, keyword_view.size())) {
-                L = M;
-            }
-            else {
-                R = M - 1;
-            }
+        else {
+            L = M + 1;
         }
-        right = L + 1;
     }
+    uint64_t left = L;
+    L = left - 1, R = sa.size() - 1;
+    while (L < R) {
+        uint64_t M = L + (R - L + 1) / 2;
+        auto i = sa[M];
+        std::string_view content(data[i.index1].begin() + i.index2, data[i.index1].end());
+        if (content.size() >= keyword_view.size() && keyword_view == content.substr(0, keyword_view.size())) {
+            L = M;
+        }
+        else {
+            R = M - 1;
+        }
+    }
+    uint64_t right = L + 1;
     if (left < right) {
         std::vector<uint32_t> indices;
         indices.reserve(right - left + 1);
@@ -139,7 +134,7 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
         std::sort(indices.begin(), indices.end());
         indices.push_back(std::numeric_limits<uint32_t>::max());
         uint64_t last = 0;
-        for (uint64_t last = 0, i = 0; i < indices.size(); ++i) {
+        for (uint64_t last = 0, i = 1; i < indices.size(); ++i) {
             if (indices[i] != indices[i - 1]) {
                 ret.emplace_back(ids[indices[last]], i - last);
                 last = i;
