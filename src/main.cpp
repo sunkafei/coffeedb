@@ -18,7 +18,7 @@ void test() {
         "data": {
             "A": 100,
             "B": "010孙咖啡",
-            "C": 1.14
+            "C": 111
         }
     }
     )"_json);
@@ -32,7 +32,7 @@ void test() {
         }
     }
     )"_json);
-    response(R"(
+    /*response(R"(
         {
             "operation": "build"
         }
@@ -46,7 +46,7 @@ void test() {
         "fields": ["$correlation", "A"]
     }
     )"_json);
-    print(result);
+    print(result);*/
 }
 int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"clear"}'

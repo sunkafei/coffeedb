@@ -5,6 +5,8 @@ target("coffeedb")
     add_files("src/*.cpp")
     set_languages("c++20")
     add_includedirs("package")
+    add_links("tbb")  -- To enable C++17 Parallel algorithms
+                      -- sudo apt install libtbb-dev
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io

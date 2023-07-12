@@ -63,8 +63,8 @@ void build() {
                     throw std::runtime_error(std::format("Mismatched type for \"{}\"", key));
                 }
                 else {
-                    ptr->add(id, value);
                     data[id][key] = value;
+                    ptr->add(id, value);
                 }
             }
             else if (type == double_index::number) {
@@ -78,8 +78,8 @@ void build() {
                     throw std::runtime_error(std::format("Mismatched type for \"{}\"", key));
                 }
                 else {
-                    ptr->add(id, value);
                     data[id][key] = value;
+                    ptr->add(id, value);
                 }
             }
             else if (type == string_index::number) {
@@ -99,8 +99,9 @@ void build() {
                     throw std::runtime_error(std::format("Mismatched type for \"{}\"", key));
                 }
                 else {
-                    ptr->add(id, std::move(value));
-                    data[id][key] = value;
+                    value.shrink_to_fit();
+                    data[id][key] = std::move(value);
+                    ptr->add(id, std::get<std::string>(data[id][key]));
                 }
             }
             else {
@@ -120,6 +121,44 @@ void build() {
     ::data = std::move(data);
 }
 void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) {
+    for (std::unique_lock lock(mutex_data); const auto &[key, value] : object) {
+        if (!indices.count(key)) {
+            std::visit([&key]<typename T>(const T& value){
+                if constexpr (std::is_same_v<T, int64_t>) {
+                    indices[key] = std::make_unique<integer_index>();
+                }
+                else if constexpr (std::is_same_v<T, double>) {
+                    indices[key] = std::make_unique<double_index>();
+                }
+                else if constexpr (std::is_same_v<T, std::string>) {
+                    indices[key] = std::make_unique<string_index>();
+                }
+                else {
+                    static_assert(false, "Non-exhaustive visitor!");
+                }
+            }, value);
+        }
+        else {
+            std::visit([&key]<typename T>(const T& value){
+                void *ptr = nullptr;
+                if constexpr (std::is_same_v<T, int64_t>) {
+                    ptr = dynamic_cast<integer_index*>(indices[key].get());
+                }
+                else if constexpr (std::is_same_v<T, double>) {
+                    ptr = dynamic_cast<double_index*>(indices[key].get());
+                }
+                else if constexpr (std::is_same_v<T, std::string>) {
+                    ptr = dynamic_cast<string_index*>(indices[key].get());
+                }
+                else {
+                    static_assert(false, "Non-exhaustive visitor!");
+                }
+                if (!ptr) {
+                    throw std::runtime_error(std::format("Mismatched type for \"{}\"", key));
+                }
+            }, value);
+        }
+    }
     std::shared_lock lock(mutex_files);
     std::string filename = storage_location + raw_directory + std::to_string(id);
     FILE *fp = fopen(filename.c_str(), "wb");

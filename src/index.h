@@ -15,6 +15,7 @@ class integer_index : public index {
 private:
     std::vector<std::pair<int64_t, int64_t>> data;
 public:
+    using value_type = int64_t;
     static constexpr int8_t number = 0;
     void add(int64_t id, int64_t value);
     void build() override;
@@ -24,6 +25,7 @@ class double_index : public index {
 private:
     std::vector<std::pair<double, int64_t>> data;
 public:
+    using value_type = double;
     static constexpr int8_t number = 1;
     void add(int64_t id, double value);
     void build() override;
@@ -38,10 +40,11 @@ private:
     };
     std::vector<compound_index> sa;
     std::vector<int64_t> ids;
-    std::vector<std::string> data;
+    std::vector<std::string_view> data;
 public:
+    using value_type = std::string;
     static constexpr int8_t number = 2;
-    void add(int64_t id, const std::string &value);
+    void add(int64_t id, std::string_view value);
     void build() override;
     std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) override;
 };

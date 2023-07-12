@@ -19,7 +19,7 @@ void integer_index::add(int64_t id, int64_t value) {
 void double_index::add(int64_t id, double value) {
     data.emplace_back(value, id);
 }
-void string_index::add(int64_t id, const std::string &value) {
+void string_index::add(int64_t id, std::string_view value) {
     ids.push_back(id);
     data.emplace_back(value);
 }
@@ -41,9 +41,7 @@ void string_index::build() {
     data.shrink_to_fit();
     sa.shrink_to_fit();
     std::sort(std::execution::par, sa.begin(), sa.end(), [this](auto i, auto j) {
-        std::string_view L(data[i.index1].begin() + i.index2, data[i.index1].end());
-        std::string_view R(data[j.index1].begin() + j.index2, data[j.index1].end());
-        return L < R;
+        return data[i.index1].substr(i.index2) < data[j.index1].substr(j.index2);
     });
 }
 std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const std::string &range) {
@@ -103,7 +101,7 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
     while (L < R) {
         uint64_t M = L + (R - L) / 2;
         auto i = sa[M];
-        std::string_view content(data[i.index1].begin() + i.index2, data[i.index1].end());
+        std::string_view content = data[i.index1].substr(i.index2);
         if (keyword_view <= content) {
             R = M;
         }
@@ -116,7 +114,7 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
     while (L < R) {
         uint64_t M = L + (R - L + 1) / 2;
         auto i = sa[M];
-        std::string_view content(data[i.index1].begin() + i.index2, data[i.index1].end());
+        std::string_view content = data[i.index1].substr(i.index2);
         if (content.size() >= keyword_view.size() && keyword_view == content.substr(0, keyword_view.size())) {
             L = M;
         }
