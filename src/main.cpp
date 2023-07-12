@@ -40,7 +40,7 @@ void test() {
     {
         "operation": "query",
         "constraints": {
-            "B": "010"
+            "B": "01010"
         },
         "fields": ["$correlation", "A"]
     }
@@ -51,8 +51,8 @@ int main(int argc, char *argv[]) {
     try {
         parse_command(argc, argv);
         //test();
-        profile_string_process();
-        //start_server();
+        //profile_string_process();
+        start_server();
     }
     catch (std::exception &e) {
         std::string message = std::format("[Error] {}.", e.what());

@@ -3,6 +3,8 @@
 #include <regex>
 #include <cctype>
 #include <limits>
+#include <string_view>
+#include <execution>
 #include "utility.h"
 #include "index.h"
 std::regex range_pattern(R"(\s*(\[|\()\s*(.+)\s*,\s*(.+)(\]|\))\s*)");
@@ -18,16 +20,31 @@ void double_index::add(int64_t id, double value) {
     data.emplace_back(value, id);
 }
 void string_index::add(int64_t id, const std::string &value) {
-    data.emplace_back(value, id);
+    ids.push_back(id);
+    data.emplace_back(value);
 }
 void integer_index::build() {
     std::sort(data.begin(), data.end());
+    data.shrink_to_fit();
 }
 void double_index::build() {
     std::sort(data.begin(), data.end());
+    data.shrink_to_fit();
 }
 void string_index::build() {
-    
+    for (uint64_t i = 0; i < data.size(); ++i) {
+        for (uint64_t j = 0; j < data[i].size(); ++j) {
+            sa.emplace_back(i, j);
+        }
+    }
+    ids.shrink_to_fit();
+    data.shrink_to_fit();
+    sa.shrink_to_fit();
+    std::sort(std::execution::par, sa.begin(), sa.end(), [this](auto i, auto j) {
+        std::string_view L(data[i.index1].begin() + i.index2, data[i.index1].end());
+        std::string_view R(data[j.index1].begin() + j.index2, data[j.index1].end());
+        return L < R;
+    });
 }
 std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const std::string &range) {
     using T = std::decay_t<decltype(data[0].first)>;
@@ -63,7 +80,9 @@ std::vector<std::pair<int64_t, int64_t>> double_index::query(const std::string &
 }
 std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &keyword) {
     std::vector<std::pair<int64_t, int64_t>> ret;
-    for (const auto [content, id] : data) {
+    /*for (int i = 0; i < data.size(); ++i) {
+        const auto &content = data[i];
+        auto id = ids[i];
         auto iter = content.begin();
         int correlation = 0;
         for (;;) {
@@ -76,6 +95,55 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
         }
         if (correlation) {
             ret.emplace_back(id, correlation);
+        }
+    }
+    return ret;*/
+    std::string_view keyword_view(keyword);
+    uint64_t left, right;
+    {
+        uint64_t L = 0, R = sa.size() - 1;
+        while (L < R) {
+            uint64_t M = L + (R - L) / 2;
+            auto i = sa[M];
+            std::string_view content(data[i.index1].begin() + i.index2, data[i.index1].end());
+            if (keyword_view <= content) {
+                R = M;
+            }
+            else {
+                L = M + 1;
+            }
+        }
+        left = L;
+    }
+    {
+        uint64_t L = left - 1, R = sa.size() - 1;
+        while (L < R) {
+            int M = L + (R - L + 1) / 2;
+            auto i = sa[M];
+            std::string_view content(data[i.index1].begin() + i.index2, data[i.index1].end());
+            if (content.size() >= keyword_view.size() && keyword_view == content.substr(0, keyword_view.size())) {
+                L = M;
+            }
+            else {
+                R = M - 1;
+            }
+        }
+        right = L + 1;
+    }
+    if (left < right) {
+        std::vector<uint32_t> indices;
+        indices.reserve(right - left + 1);
+        for (uint64_t i = left; i < right; ++i) {
+            indices.push_back(sa[i].index1);
+        }
+        std::sort(indices.begin(), indices.end());
+        indices.push_back(std::numeric_limits<uint32_t>::max());
+        uint64_t last = 0;
+        for (uint64_t last = 0, i = 0; i < indices.size(); ++i) {
+            if (indices[i] != indices[i - 1]) {
+                ret.emplace_back(ids[indices[last]], i - last);
+                last = i;
+            }
         }
     }
     return ret;

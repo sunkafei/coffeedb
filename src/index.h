@@ -31,7 +31,14 @@ public:
 };
 class string_index : public index {
 private:
-    std::vector<std::pair<std::string, int64_t>> data;
+    struct compound_index {
+        uint64_t index1 : 30; // 1e9
+        uint64_t index2 : 34; // 16GB
+        compound_index(uint64_t index1, uint64_t index2) : index1(index1), index2(index2) {}
+    };
+    std::vector<compound_index> sa;
+    std::vector<int64_t> ids;
+    std::vector<std::string> data;
 public:
     static constexpr int8_t number = 2;
     void add(int64_t id, const std::string &value);
