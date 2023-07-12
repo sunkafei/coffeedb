@@ -97,9 +97,9 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
     }
     return ret;*/
     std::string_view keyword_view(keyword);
-    uint64_t L = 0, R = sa.size() - 1;
+    int64_t L = 0, R = ssize(sa) - 1;
     while (L < R) {
-        uint64_t M = L + (R - L) / 2;
+        int64_t M = L + (R - L) / 2;
         auto i = sa[M];
         std::string_view content = data[i.index1].substr(i.index2);
         if (keyword_view <= content) {
@@ -109,10 +109,10 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
             L = M + 1;
         }
     }
-    uint64_t left = L;
+    int64_t left = L;
     L = left - 1, R = sa.size() - 1;
     while (L < R) {
-        uint64_t M = L + (R - L + 1) / 2;
+        int64_t M = L + (R - L + 1) / 2;
         auto i = sa[M];
         std::string_view content = data[i.index1].substr(i.index2);
         if (content.size() >= keyword_view.size() && keyword_view == content.substr(0, keyword_view.size())) {
@@ -122,11 +122,11 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
             R = M - 1;
         }
     }
-    uint64_t right = L + 1;
+    int64_t right = L + 1;
     if (left < right) {
         std::vector<uint32_t> indices;
         indices.reserve(right - left + 1);
-        for (uint64_t i = left; i < right; ++i) {
+        for (int64_t i = left; i < right; ++i) {
             indices.push_back(sa[i].index1);
         }
         constexpr uint32_t base = (1 << 17) - 1;

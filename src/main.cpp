@@ -12,41 +12,21 @@ void test() {
     system("rm -r raw");
     json a;
     init();
-    response(R"(
-    {
-        "operation": "insert",
-        "data": {
-            "A": 100,
-            "B": "010孙咖啡",
-            "C": 111
+    auto response = [](auto &&message) {
+        try {
+            print(::response(message));
         }
-    }
-    )"_json);
-    response(R"(
-    {
-        "operation": "insert",
-        "data": {
-            "A": 200,
-            "B": "123孙咖啡0101010",
-            "C": 2.14
+        catch (std::exception &e) {
+            std::string message = std::format("<h1>Error 500</h1><p>{}</p>", e.what());
+            error(message);
         }
-    }
-    )"_json);
-    /*response(R"(
-        {
-            "operation": "build"
-        }
-    )"_json);
-    auto result = response(R"(
-    {
-        "operation": "query",
-        "constraints": {
-            "B": "01010"
-        },
-        "fields": ["$correlation", "A"]
-    }
-    )"_json);
-    print(result);*/
+    };
+    response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
+    //response(R"({"operation":"insert "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
+    response(R"({"operation":"insert", "data":{"id":"[1,20]"},"fields":["id"]})"_json);
+    response(R"({"operation":"insert", "data":{"id":"[1,20]"},"fields":["id"]})"_json);
+    response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
+    response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
 }
 int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"clear"}'
