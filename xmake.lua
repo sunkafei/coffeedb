@@ -6,7 +6,7 @@ target("coffeedb")
     set_languages("c++20")
     add_includedirs("package")
     add_ldflags("-ltbb")  -- To enable C++17 Parallel algorithms
-                      -- sudo apt install libtbb-dev
+                          -- sudo apt install libtbb-dev
     add_ldflags("-static-libstdc++")
 
 --

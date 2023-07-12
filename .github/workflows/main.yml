@@ -31,6 +31,8 @@ jobs:
                 which gcc
                 sudo rm /usr/bin/gcc
                 sudo ln -s /usr/local/bin/gcc /usr/bin/gcc
+                sudo rm /usr/bin/g++
+                sudo ln -s /usr/local/bin/g++ /usr/bin/g++
           - name: Compile Coffeedb
             run: xmake -rv
           - name: Start Coffeedb
