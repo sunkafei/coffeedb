@@ -4,7 +4,7 @@
 [![GitHub Downloads](https://img.shields.io/github/downloads/sunkafei/coffeedb/total)](https://github.com/sunkafei/coffeedb/releases)
 [![GitHub stars](https://img.shields.io/github/stars/sunkafei/coffeedb)](https://github.com/sunkafei/coffeedb/stargazers)
 
-**CoffeeDB** is an out-of-the-box string/keyword search database. CoffeeDB builds indexes for numeric data and generalized suffix automata for text data to speed up query operations. Unlike most existing databases, CoffeeDB maintains these data structures in memory. On the one hand, this significantly improves the query speed, on the other hand, it also limits its ability to handle very large-scale data. If the data you need to retrieve does not exceed tens of gigabytes, then CoffeeDB may be the best practice you want.
+**CoffeeDB** is an out-of-the-box string/keyword search database. CoffeeDB builds indexes for numeric data and suffix arrays for text data to speed up query operations. Unlike most existing databases, CoffeeDB maintains these data structures in memory. On the one hand, this significantly improves the query speed, on the other hand, it also limits its ability to handle very large-scale data. If the data you need to retrieve does not exceed tens of gigabytes, then CoffeeDB may be the best practice you want.
 
 - [Get Started](#get-started)
 - [Run CoffeeDB](#run-coffeedb)

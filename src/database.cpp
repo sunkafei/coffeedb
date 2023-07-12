@@ -10,16 +10,24 @@
 #include <format>
 #include <unordered_map>
 #include <algorithm>
+#include <mutex>
+#include <shared_mutex>
 #include "config.h"
 #include "utility.h"
 #include "index.h"
 constexpr std::string key_correlation("$correlation");
 std::map<std::string, std::unique_ptr<index>> indices;
 std::unordered_map<int64_t, std::map<std::string, var>> data;
+std::shared_mutex mutex_data;
+std::shared_mutex mutex_files;
+void init() {
+    std::filesystem::create_directory(storage_location + backup_directory);
+    std::filesystem::create_directory(storage_location + raw_directory);
+}
 void build() {
     std::map<std::string, std::unique_ptr<index>> indices;
     std::unordered_map<int64_t, std::map<std::string, var>> data;
-    for (const auto &e : std::filesystem::directory_iterator(storage_location + raw_directory)) {
+    for (std::unique_lock lock(mutex_files); const auto &e : std::filesystem::directory_iterator(storage_location + raw_directory)) {
         auto path = e.path().lexically_normal().string();
         FILE *fp = fopen(path.c_str(), "rb");
         if (!fp) {
@@ -107,10 +115,12 @@ void build() {
     for (auto &[key, value] : indices) {
         value->build();
     }
+    std::unique_lock lock(mutex_data);
     ::indices = std::move(indices);
     ::data = std::move(data);
 }
 void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) {
+    std::shared_lock lock(mutex_files);
     std::string filename = storage_location + raw_directory + std::to_string(id);
     FILE *fp = fopen(filename.c_str(), "wb");
     if (!fp) {
@@ -154,10 +164,11 @@ std::vector<std::pair<int64_t, int64_t>> query(const std::string& key, const std
     if (!indices.count(key)) {
         return {};
     }
-    auto result = indices[key]->query(range);
-    return result;
+    std::shared_lock lock(mutex_data);
+    return indices[key]->query(range);
 }
 std::vector<std::vector<std::pair<const std::string, var>>> select(const std::vector<std::pair<int64_t, int64_t>>& results, const std::vector<std::string> &keys) {
+    std::shared_lock lock(mutex_data);
     std::vector<std::vector<std::pair<const std::string, var>>> ret;
     for (auto [id, correlation] : results) {
         std::vector<std::pair<const std::string, var>> object;
@@ -182,6 +193,12 @@ std::vector<std::vector<std::pair<const std::string, var>>> select(const std::ve
         }
     }
     return ret;
+}
+void remove(const std::vector<std::pair<int64_t, int64_t>>& result) {
+    std::shared_lock lock(mutex_files);
+    for (auto [id, _] : result) {
+        std::filesystem::remove(storage_location + raw_directory + std::format("{}", id));
+    }
 }
 void clear() {
     std::filesystem::remove_all(storage_location + raw_directory);

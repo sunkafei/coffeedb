@@ -14,10 +14,6 @@ void backup(int64_t timestamp, const json &command) {
     std::ofstream file(storage_location + backup_directory + std::to_string(timestamp));
     file << command << std::endl;
 }
-void init() {
-    std::filesystem::create_directory(storage_location + backup_directory);
-    std::filesystem::create_directory(storage_location + raw_directory);
-}
 json jsonify(const std::vector<std::pair<const std::string, var>>& object) {
     json j;
     for (const auto &[key, value] : object) {
@@ -106,9 +102,7 @@ std::string response(const json &command) {
     else if (operation == "remove") {
         auto constraints = command.at("constraints");
         auto result = filter(constraints);
-        for (auto [id, _] : result) {
-            std::filesystem::remove(storage_location + raw_directory + std::format("{}", id));
-        }
+        remove(result);
     }
     else if (operation == "build") {
         build();

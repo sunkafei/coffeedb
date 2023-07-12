@@ -131,26 +131,28 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
         for (uint64_t i = left; i < right; ++i) {
             indices.push_back(sa[i].index1);
         }
-        //std::sort(indices.begin(), indices.end());
-        // RadixSort
-        const uint32_t n = indices.size();
         constexpr uint32_t base = (1 << 17) - 1;
-        std::vector<uint32_t> c(base + 8, 0);
-        std::vector<uint32_t> tmp(n, 0);
-        for (int j = 0; j < n; ++j)
-            c[indices[j] & base]++;
-        for (int j = 1; j <= base; ++j)
-            c[j] += c[j - 1];
-        for (int j = n - 1; j >= 0; --j)
-            tmp[--c[indices[j] & base]] = indices[j];
-        c = std::vector<uint32_t>(base + 8, 0);
-        for (int j = 0; j < n; ++j)
-            c[(tmp[j] >> 16) & base]++;
-        for (int j = 1; j <= base; ++j)
-            c[j] += c[j - 1];
-        for (int j = n - 1; j >= 0; --j)
-            indices[--c[(tmp[j] >> 16) & base]] = tmp[j];
-
+        const uint32_t n = indices.size();
+        if (n < base) {
+            std::sort(indices.begin(), indices.end());
+        }
+        else { // RadixSort
+            std::vector<uint32_t> c(base + 8, 0);
+            std::vector<uint32_t> tmp(n, 0);
+            for (int j = 0; j < n; ++j)
+                c[indices[j] & base]++;
+            for (int j = 1; j <= base; ++j)
+                c[j] += c[j - 1];
+            for (int j = n - 1; j >= 0; --j)
+                tmp[--c[indices[j] & base]] = indices[j];
+            c = std::vector<uint32_t>(base + 8, 0);
+            for (int j = 0; j < n; ++j)
+                c[(tmp[j] >> 16) & base]++;
+            for (int j = 1; j <= base; ++j)
+                c[j] += c[j - 1];
+            for (int j = n - 1; j >= 0; --j)
+                indices[--c[(tmp[j] >> 16) & base]] = tmp[j];
+        }
         indices.push_back(std::numeric_limits<uint32_t>::max());
         uint64_t last = 0;
         for (uint64_t last = 0, i = 1; i < indices.size(); ++i) {

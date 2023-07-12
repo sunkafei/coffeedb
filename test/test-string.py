@@ -22,6 +22,7 @@ send({
     "operation": "clear"
 })
 vals = []
+print("Start Insert ...")
 for i in range(5000):
     val = ''.join(chr(random.randint(ord('a'), ord('z'))) for i in range(5000))
     vals.append(val)
@@ -32,9 +33,11 @@ for i in range(5000):
             "val": val
         }
     })
+print("Start Build ...")
 send({
     "operation": "build"
 })
+print("Start Query ...")
 for _ in range(100):
     val = ''.join(chr(random.randint(ord('a'), ord('z'))) for i in range(3))
     result = send({
