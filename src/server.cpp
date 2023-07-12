@@ -8,7 +8,7 @@
 #include "database.h"
 httplib::Server server;
 void start_server() {
-    FILE *output = popen("curl http://ifconfig.io", "r");
+    FILE *output = popen("dig +short myip.opendns.com @resolver1.opendns.com", "r");
     std::string ip;
     for (;;) {
         auto ch = fgetc(output);
@@ -17,7 +17,7 @@ void start_server() {
         }
         ip.push_back(ch);
     }
-    if (ip.empty())
+    if (ip.empty() || ip.find(':') != std::string::npos)
         ip = "127.0.0.1";
     print("Starting CoffeeDB ...");
     init();
