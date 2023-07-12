@@ -30,7 +30,7 @@ jobs:
                 gcc -v
                 which gcc
                 sudo rm /usr/bin/gcc
-                sudo ln -s /usr/local/bin/g++ /usr/bin/gcc
+                sudo ln -s /usr/local/bin/gcc /usr/bin/gcc
           - name: Compile Coffeedb
             run: xmake -rv
           - name: Start Coffeedb
