@@ -17,16 +17,34 @@ void test() {
             print(::response(message));
         }
         catch (std::exception &e) {
-            std::string message = std::format("<h1>Error 500</h1><p>{}</p>", e.what());
+            std::string message = std::format("[ERROR] {}.", e.what());
             error(message);
         }
     };
-    response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
-    //response(R"({"operation":"insert "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
-    response(R"({"operation":"insert", "data":{"id":"[1,20]"},"fields":["id"]})"_json);
-    response(R"({"operation":"insert", "data":{"id":"[1,20]"},"fields":["id"]})"_json);
-    response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
-    response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
+    response(R"({
+        "operation":"clear"
+    })"_json);
+    response(R"({
+        "operation":"insert", 
+        "data":{
+            "id": "abcd"
+        }
+    })"_json);
+    response(R"({
+        "operation":"insert", 
+        "data":{
+            "id": "efgcd7",
+            "name": "smz"
+        }
+    })"_json);
+    response(R"({
+        "operation":"build"
+    })"_json);
+    response(R"({
+        "operation": "query",
+        "fields" : [123, "id"]
+    })"_json);
+    //response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
 }
 int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"clear"}'
@@ -34,8 +52,8 @@ int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]}'
     try {
         parse_command(argc, argv);
-        //test();
-        profile_string_process();
+        test();
+        //profile_string_process();
         //start_server();
     }
     catch (std::exception &e) {

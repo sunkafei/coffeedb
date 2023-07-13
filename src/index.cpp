@@ -62,14 +62,14 @@ void string_index::build() {
     else {
         this->sa = new uint64_t[size];
     }
-    std::visit([this]<typename T>(T *sa){
+    std::visit([this]<typename T>(T *sa) {
         auto *pointer = sa;
         for (T i = 0; i < data.size(); ++i) {
             for (T j = 0; j < data[i].size(); ++j) {
                 *pointer++ = ((j << bits) | i);
             }
         }
-        std::sort(std::execution::par, sa, sa + size, [this](auto i, auto j) {
+        std::sort(std::execution::par, sa, sa + size, [this](auto i, auto j) noexcept {
             return locate(i) < locate(j);
         });
     }, sa);

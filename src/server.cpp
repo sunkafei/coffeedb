@@ -32,7 +32,7 @@ void start_server() {
             res.set_content(reply, "application/json");
         }
         catch (std::exception &e) {
-            std::string message = std::format("<h1>Error 500</h1><p>{}</p>", e.what());
+            std::string message = std::format("[Error] {}.", e.what());
             res.set_content(message.c_str(), "text/html");
             res.status = 500;
         }

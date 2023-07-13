@@ -130,7 +130,7 @@ The `insert` operation has the following general format:
     }
 }
 ```
-where the `data` field contains the object to be inserted. The inserted object can contain any number of key-value pairs. Note that all `insert` operations will be cached and will not take effect immediately. To make `insert` operations effective, you need to call the [build](#build) operation.
+where the `data` field contains the object to be inserted. The inserted object can contain any number of key-value pairs. Supported data types include integers, floats, and strings. Different objects can have different fields, but the value type of fields with the same name must be the same. Note that all `insert` operations will be cached and will not take effect immediately. To make `insert` operations effective, you need to call the [build](#build) operation.
 
 ### Remove
 The `remove` operation has the following general format:
@@ -166,7 +166,7 @@ The `query` operation has the following general format:
     ]
 }
 ```
-All obejcts that meet the constraints in `constraints` will be selected, and then the fields in `fields` will be filtered out and returned. You can get all objects in the database by omitting `constraints`, and you can get all fields in objects by omitting `fields`.
+All obejcts that meet the constraints in `constraints` will be selected, and then their fields in `fields` will be filtered out and returned. You can get all objects in the database by omitting `constraints`, and you can get all fields in objects by omitting `fields`.
 
 For fields of string type, the constraint can be a substring that must appear. In this case, an additional field named `$correlation` will be added to the returned object to indicate the number of occurrences of this substring.
 

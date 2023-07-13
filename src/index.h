@@ -46,7 +46,7 @@ private:
     std::vector<int64_t> ids;
     std::vector<std::string_view> data;
     std::variant<uint32_t*, uint64_t*> sa;
-    inline std::string_view locate(auto position) {
+    inline std::string_view locate(auto position) noexcept {
         auto index1 = position & mask;
         auto index2 = position >> bits;
         return data[index1].substr(index2);

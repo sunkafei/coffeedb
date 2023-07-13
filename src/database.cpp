@@ -199,6 +199,13 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
     }
     fclose(fp);
 }
+std::vector<std::pair<int64_t, int64_t>> query() {
+    std::vector<std::pair<int64_t, int64_t>> ret;
+    for (const auto &[id, _] : data) {
+        ret.emplace_back(id, 0);
+    }
+    return ret;
+}
 std::vector<std::pair<int64_t, int64_t>> query(const std::string& key, const std::string& range) {
     if (!indices.count(key)) {
         return {};
