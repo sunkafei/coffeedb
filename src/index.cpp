@@ -5,6 +5,7 @@
 #include <limits>
 #include <string_view>
 #include <execution>
+#include <bit>
 #include "utility.h"
 #include "index.h"
 std::regex range_pattern(R"(\s*(\[|\()\s*(.+)\s*,\s*(.+)(\]|\))\s*)");
@@ -32,17 +33,46 @@ void double_index::build() {
     data.shrink_to_fit();
 }
 void string_index::build() {
-    for (uint64_t i = 0; i < data.size(); ++i) {
-        for (uint64_t j = 0; j < data[i].size(); ++j) {
-            sa.emplace_back(i, j);
-        }
-    }
     ids.shrink_to_fit();
     data.shrink_to_fit();
-    sa.shrink_to_fit();
-    std::sort(std::execution::par, sa.begin(), sa.end(), [this](auto i, auto j) {
-        return data[i.index1].substr(i.index2) < data[j.index1].substr(j.index2);
-    });
+    this->size = 0;
+    uint64_t mask1 = 1, mask2 = 1;
+    while (mask1 < data.size()) {
+        mask1 = (mask1 << 1) + 1;
+    }
+    for (uint64_t i = 0; i < data.size(); ++i) {
+        size += data[i].size();
+        while (mask2 < data[i].size()) {
+            mask2 = (mask2 << 1) + 1;
+        }
+    }
+    const auto bits1 = std::popcount(mask1);
+    const auto bits2 = std::popcount(mask2);
+    if (bits1 + bits2 > 64) {
+        throw std::runtime_error("The amount of data exceeds the maximum range that CoffeeDB can handle");
+    }
+    if (bits1 > 32) {
+        throw std::runtime_error("The number of objects exceeds the maximum range that CoffeeDB can handle");
+    }
+    this->mask = mask1;
+    this->bits = bits1;
+    if (bits1 + bits2 <= 32) {
+        this->sa = new uint32_t[size];
+    }
+    else {
+        this->sa = new uint64_t[size];
+    }
+    std::visit([this]<typename T>(T *sa){
+        auto *pointer = sa;
+        for (T i = 0; i < data.size(); ++i) {
+            for (T j = 0; j < data[i].size(); ++j) {
+                *pointer++ = ((j << bits) | i);
+            }
+        }
+        std::sort(std::execution::par, sa, sa + size, [this](auto i, auto j) {
+            return locate(i) < locate(j);
+        });
+    }, sa);
 }
 std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const std::string &range) {
     using T = std::decay_t<decltype(data[0].first)>;
@@ -96,69 +126,71 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
         }
     }
     return ret;*/
-    std::string_view keyword_view(keyword);
-    int64_t L = 0, R = ssize(sa) - 1;
-    while (L < R) {
-        int64_t M = L + (R - L) / 2;
-        auto i = sa[M];
-        std::string_view content = data[i.index1].substr(i.index2);
-        if (keyword_view <= content) {
-            R = M;
-        }
-        else {
-            L = M + 1;
-        }
-    }
-    int64_t left = L;
-    L = left - 1, R = sa.size() - 1;
-    while (L < R) {
-        int64_t M = L + (R - L + 1) / 2;
-        auto i = sa[M];
-        std::string_view content = data[i.index1].substr(i.index2);
-        if (content.size() >= keyword_view.size() && keyword_view == content.substr(0, keyword_view.size())) {
-            L = M;
-        }
-        else {
-            R = M - 1;
-        }
-    }
-    int64_t right = L + 1;
-    if (left < right) {
-        std::vector<uint32_t> indices;
-        indices.reserve(right - left + 1);
-        for (int64_t i = left; i < right; ++i) {
-            indices.push_back(sa[i].index1);
-        }
-        constexpr uint32_t base = (1 << 17) - 1;
-        const uint32_t n = indices.size();
-        if (n < base) {
-            std::sort(indices.begin(), indices.end());
-        }
-        else { // RadixSort
-            std::vector<uint32_t> c(base + 8, 0);
-            std::vector<uint32_t> tmp(n, 0);
-            for (int j = 0; j < n; ++j)
-                c[indices[j] & base]++;
-            for (int j = 1; j <= base; ++j)
-                c[j] += c[j - 1];
-            for (int j = n - 1; j >= 0; --j)
-                tmp[--c[indices[j] & base]] = indices[j];
-            c = std::vector<uint32_t>(base + 8, 0);
-            for (int j = 0; j < n; ++j)
-                c[(tmp[j] >> 16) & base]++;
-            for (int j = 1; j <= base; ++j)
-                c[j] += c[j - 1];
-            for (int j = n - 1; j >= 0; --j)
-                indices[--c[(tmp[j] >> 16) & base]] = tmp[j];
-        }
-        indices.push_back(std::numeric_limits<uint32_t>::max());
-        uint64_t last = 0;
-        for (uint64_t last = 0, i = 1; i < indices.size(); ++i) {
-            if (indices[i] != indices[i - 1]) {
-                ret.emplace_back(ids[indices[last]], i - last);
-                last = i;
+    std::visit([this, &ret, &keyword](auto *sa){
+        std::string_view keyword_view(keyword);
+        int64_t L = 0, R = size - 1;
+        while (L < R) {
+            int64_t M = L + (R - L) / 2;
+            auto i = sa[M];
+            std::string_view content = locate(i);
+            if (keyword_view <= content) {
+                R = M;
+            }
+            else {
+                L = M + 1;
             }
         }
-    }
+        int64_t left = L;
+        L = left - 1, R = size - 1;
+        while (L < R) {
+            int64_t M = L + (R - L + 1) / 2;
+            auto i = sa[M];
+            std::string_view content = locate(i);
+            if (content.size() >= keyword_view.size() && keyword_view == content.substr(0, keyword_view.size())) {
+                L = M;
+            }
+            else {
+                R = M - 1;
+            }
+        }
+        int64_t right = L + 1;
+        if (left < right) {
+            std::vector<uint64_t> indices;
+            indices.reserve(right - left + 1);
+            for (int64_t i = left; i < right; ++i) {
+                indices.push_back(sa[i] & mask);
+            }
+            constexpr uint64_t base = (1 << 17) - 1;
+            const uint64_t n = indices.size();
+            if (n < base) {
+                std::sort(indices.begin(), indices.end());
+            }
+            else { // RadixSort
+                std::vector<uint64_t> c(base + 8, 0);
+                std::vector<uint64_t> tmp(n, 0);
+                for (int j = 0; j < n; ++j)
+                    c[indices[j] & base]++;
+                for (int j = 1; j <= base; ++j)
+                    c[j] += c[j - 1];
+                for (int j = n - 1; j >= 0; --j)
+                    tmp[--c[indices[j] & base]] = indices[j];
+                c = std::vector<uint64_t>(base + 8, 0);
+                for (int j = 0; j < n; ++j)
+                    c[(tmp[j] >> 16) & base]++;
+                for (int j = 1; j <= base; ++j)
+                    c[j] += c[j - 1];
+                for (int j = n - 1; j >= 0; --j)
+                    indices[--c[(tmp[j] >> 16) & base]] = tmp[j];
+            }
+            indices.push_back(std::numeric_limits<uint64_t>::max());
+            uint64_t last = 0;
+            for (uint64_t last = 0, i = 1; i < indices.size(); ++i) {
+                if (indices[i] != indices[i - 1]) {
+                    ret.emplace_back(ids[indices[last]], i - last);
+                    last = i;
+                }
+            }
+        }  
+    }, sa);
     return ret;
 }

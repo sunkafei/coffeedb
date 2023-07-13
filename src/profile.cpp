@@ -7,6 +7,7 @@ void profile_string_process() {
     std::string data(10000, '*');
     std::default_random_engine engine;
     std::uniform_int_distribution gen('a', 'z');
+    system("free -h");
     response(R"(
         {
             "operation": "clear"
@@ -40,6 +41,7 @@ void profile_string_process() {
             "operation": "build"
         }
     )"_json);
+    system("free -h");
     print(std::format("Build Time: {}ms", total));
     total = 0;
     data.resize(4);
