@@ -1,19 +1,68 @@
-#include <locale>
+//#include <execution>
 #include <algorithm>
 #include <regex>
 #include <cctype>
 #include <limits>
 #include <string_view>
-#include <execution>
 #include <bit>
+#include <mutex>
+#include <condition_variable>
+#include <random>
+#include <queue>
+#include <thread>
 #include "utility.h"
 #include "index.h"
 std::regex range_pattern(R"(\s*(\[|\()\s*(.+)\s*,\s*(.+)(\]|\))\s*)");
-template<class Facet> struct deletable_facet : Facet {
-    template<class... Args> deletable_facet(Args&&... args) : Facet(std::forward<Args>(args)...) {}
-    ~deletable_facet() {}
-};
-std::wstring_convert<deletable_facet<std::codecvt<char32_t, char, std::mbstate_t>>, char32_t> conv32;
+std::mutex mutex;
+std::condition_variable condition_variable;
+std::default_random_engine engine(20140920);
+std::deque<std::pair<void*, void*>> segments;
+int64_t chuck_size, rest;
+template<typename T> void parallel_sort(auto compare) {
+    static_assert(sizeof(compare) <= 8);
+    for (;;) {
+        std::unique_lock lock(mutex);
+        condition_variable.wait(lock, []{ return !segments.empty() || rest == 0; });
+        if (rest == 0) {
+            break;
+        }
+        auto pr = segments.front();
+        auto begin = (T*)pr.first, end = (T*)pr.second;
+        const auto length = end - begin;
+        int tmp = segments.size();
+        segments.pop_front();
+        if (length <= chuck_size) {
+            rest -= length;
+        }
+        lock.unlock();
+        if (length <= chuck_size) {
+            std::sort(begin, end, compare);
+            continue;
+        }
+        else {
+            std::uniform_int_distribution<int64_t> gen(0, length - 1);
+            auto pivot = begin[gen(engine)];
+            auto *middle = std::partition(begin, end, [pivot, compare](auto value) {
+                return compare(value, pivot);
+            });
+            std::lock_guard guard(mutex);
+            if (middle - begin > chuck_size) {
+                segments.emplace_front(begin, middle);
+            }
+            else {
+                segments.emplace_back(begin, middle);
+            }
+            if (end - middle > chuck_size) {
+                segments.emplace_front(middle, end);
+            }
+            else {
+                segments.emplace_back(middle, end);
+            }
+        }
+        condition_variable.notify_one();
+        condition_variable.notify_one();
+    }
+}
 void integer_index::add(int64_t id, int64_t value) {
     data.emplace_back(value, id);
 }
@@ -69,9 +118,28 @@ void string_index::build() {
                 *pointer++ = ((j << bits) | i);
             }
         }
-        std::sort(std::execution::par, sa, sa + size, [this](auto i, auto j) noexcept {
+        while (segments.size()) {
+            segments.pop_back();
+        }
+        segments.emplace_back(sa, sa + size);
+        chuck_size = std::max((uint64_t)2048, this->size / 128);
+        rest = this->size;
+        auto worker = [this](){
+            parallel_sort<T>([this](auto i, auto j) noexcept {
+                return locate(i) < locate(j);
+            });
+        };
+        std::vector<std::thread> threads;
+        for (int i = 0; i + 1 < std::thread::hardware_concurrency(); ++i) {
+            threads.emplace_back(worker);
+        }
+        worker();
+        for (auto &thread : threads) {
+            thread.join();
+        }
+        /*std::sort(std::execution::par, sa, sa + size, [this](auto i, auto j) noexcept {
             return locate(i) < locate(j);
-        });
+        });*/
     }, sa);
 }
 std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const std::string &range) {

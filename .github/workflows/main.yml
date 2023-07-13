@@ -26,13 +26,7 @@ jobs:
                 sudo add-apt-repository ppa:xmake-io/xmake
                 sudo apt update
                 sudo apt install xmake
-                pwd
-                gcc -v
-                which gcc
-                sudo rm /usr/bin/gcc
-                sudo ln -s /usr/local/bin/gcc /usr/bin/gcc
-                sudo rm /usr/bin/g++
-                sudo ln -s /usr/local/bin/g++ /usr/bin/g++
+                xmake f --cc=$(which gcc) --cxx=$(which g++) --ld=$(which g++)
           - name: Compile Coffeedb
             run: xmake -rv
           - name: Start Coffeedb
