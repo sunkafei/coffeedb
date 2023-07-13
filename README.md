@@ -177,4 +177,17 @@ For fields of type integer and float, the constraint can be an interval indicati
 |[1,inf)|Values greater than $1$ (inclusive).|
 |[-inf,1)|Values less than $1$ (exclusive).|
 
-You can find some use cases of the `query` operation in [Get Started](#get-started).
+Multiple conditions can be specified for each field. There is an **OR** relationship between conditions in the same field, and an **AND** relationship between different fields. 
+The following example means: select all objects whose `name` contains "coffee" as a substring and whose `age` is between $[10,20]$ or $[30,40]$.
+```json
+{
+    "operation": "query",
+    "constraints": {
+        "name": "coffee",
+        "age": ["[10,20]", "[30,40]"]
+    }
+}
+```
+
+
+You can find more use cases of the `query` operation in [Get Started](#get-started).
