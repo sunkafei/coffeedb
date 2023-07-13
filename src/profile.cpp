@@ -13,9 +13,9 @@ void profile_string_process() {
             "operation": "clear"
         }
     )"_json);
-    auto response = [&total](const auto &val) {
+    auto response = [&total](auto val) {
         auto start = std::chrono::steady_clock::now();
-        auto ret = ::response(val);
+        auto ret = ::response(std::move(val));
         auto end = std::chrono::steady_clock::now();
         total += std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         return ret;
@@ -59,7 +59,7 @@ void profile_string_process() {
             ]
         })"_json;
         j["constraints"]["data"] = data;
-        auto ret = response(j);
+        auto ret = response(std::move(j));
     }
     print(std::format("Query Time: {}ms", total));
 }

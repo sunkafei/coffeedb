@@ -109,9 +109,11 @@ auto filter(const json &data) {
     }
     return answer;
 }
-std::string response(const json &command) {
+std::string response(json command) {
+    std::string ret;
     auto timestamp = std::chrono::system_clock::now().time_since_epoch().count();
     std::string operation = command.at("operation");
+    command.erase(command.find("operation"));
     backup(timestamp, command);
     if (operation == "insert") {
         auto data = command.at("data");
@@ -132,13 +134,14 @@ std::string response(const json &command) {
             }
         }
         insert(timestamp, object);
-        return "";
+        command.erase(command.find("data"));
     }
     else if (operation == "query") {
         std::vector<std::pair<int64_t, int64_t>> result;
         if (command.contains("constraints")) {
             auto constraints = command.at("constraints");
             result = filter(constraints);
+            command.erase(command.find("constraints"));
         }
         else {
             result = query();
@@ -159,18 +162,23 @@ std::string response(const json &command) {
             else {
                 throw std::runtime_error("The type of fields must be string or array of strings");
             }
+            command.erase(command.find("fields"));
         }
         auto list = select(result, fields);
-        auto ret = json::array();;
+        auto L = json::array();
         for (const auto &object : list) {
-            ret.push_back(jsonify(object));
+            L.push_back(jsonify(object));
         }
-        return ret.dump();
+        ret = L.dump();
     }
     else if (operation == "remove") {
+        if (!command.contains("constraints")) {
+            throw std::runtime_error("For security, the remove operation must have a \"constraints\" field");
+        }
         auto constraints = command.at("constraints");
         auto result = filter(constraints);
         remove(result);
+        command.erase(command.find("constraints"));
     }
     else if (operation == "build") {
         build();
@@ -179,7 +187,10 @@ std::string response(const json &command) {
         clear();
     }
     else {
-        throw std::runtime_error("Invalid query type: " + operation);
+        throw std::runtime_error("Invalid operation: " + operation);
     }
-    return "";
+    for (const auto &item : command.items()) {
+        throw std::runtime_error(std::format("Invalid key: \"{}\"", item.key()));
+    }
+    return ret;
 }

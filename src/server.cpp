@@ -26,8 +26,7 @@ void start_server() {
     print(std::format("Running at http://{}:{}/coffeedb", ip, ::port));
     server.Post("/coffeedb", [](const httplib::Request &req, httplib::Response &res) {
         try {
-            json input = json::parse(req.body);
-            std::string reply = response(input);
+            std::string reply = response(json::parse(req.body));
             res.set_header("Access-Control-Allow-Origin", "*");
             res.set_content(reply, "application/json");
         }
@@ -37,15 +36,17 @@ void start_server() {
             res.status = 500;
         }
     });
-    constexpr auto content = "<h1>CoffeeDB</h1><p>https://github.com/sunkafei/coffeedb</p>";
-    server.Get("/", [](const httplib::Request &req, httplib::Response &res) {
+    auto response_get = [](const httplib::Request &req, httplib::Response &res) {
+        constexpr char content[] = R"(
+            <h1>CoffeeDB</h1>
+            <p>The project address is: <a href="https://github.com/sunkafei/coffeedb">https://github.com/sunkafei/coffeedb</a></p>
+            Please use the <b>POST</b> method to interact with CoffeeDB.
+        )";
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(content, "text/html");
-    });
-    server.Get("/coffeedb", [](const httplib::Request &req, httplib::Response &res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_content(content, "text/html");
-    });
+    };
+    server.Get("/", response_get);
+    server.Get("/coffeedb", response_get);
     if (!server.listen("0.0.0.0", ::port)) {
         throw std::runtime_error(std::format("Failed to listen on port {}", ::port));
     }

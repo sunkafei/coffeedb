@@ -3,5 +3,5 @@
 #include "utility.h"
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
-std::string response(const json &command);
+std::string response(json command);
 #endif

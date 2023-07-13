@@ -26,15 +26,17 @@ void test() {
     })"_json);
     response(R"({
         "operation":"insert", 
-        "data":{
-            "id": "abcd"
+        "data": {
+            "id": "abcd",
+            "range": 123
         }
     })"_json);
     response(R"({
         "operation":"insert", 
         "data":{
             "id": "efgcd7",
-            "name": "smz"
+            "name": "smz",
+            "range": 999
         }
     })"_json);
     response(R"({
@@ -42,7 +44,10 @@ void test() {
     })"_json);
     response(R"({
         "operation": "query",
-        "fields" : [123, "id"]
+        "constraints": {
+            "range": ["[100,200]", "[998,999]"]
+        },
+        "fields": ["id"]
     })"_json);
     //response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
 }
