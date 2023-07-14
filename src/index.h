@@ -4,6 +4,7 @@
 #include <vector>
 #include <variant>
 #include <memory>
+#include <limits>
 class index {
 public:
     index(){}
@@ -46,10 +47,18 @@ private:
     std::vector<int64_t> ids;
     std::vector<std::string_view> data;
     std::variant<uint32_t*, uint64_t*> sa;
-    inline std::string_view locate(auto position) noexcept {
+    inline std::string_view suffix(auto position, int64_t offset = 0) noexcept {
         auto index1 = position & mask;
-        auto index2 = position >> bits;
+        auto index2 = (position >> bits) + offset;
         return data[index1].substr(index2);
+    }
+    inline int32_t character(auto position, int64_t offset = 0) noexcept {
+        auto index1 = position & mask;
+        auto index2 = (position >> bits) + offset;
+        if (index2 == data[index1].size()) {
+            return 0;
+        }
+        return (int32_t)data[index1][index2] - std::numeric_limits<char>::min() + 1;
     }
 public:
     using value_type = std::string;
@@ -62,5 +71,6 @@ public:
             delete[] sa;
         }, sa);
     }
+    template<typename T> void parallel_sort();
 };
 #endif

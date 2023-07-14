@@ -249,4 +249,6 @@ void remove(const std::vector<std::pair<int64_t, int64_t>>& result) {
 void clear() {
     std::filesystem::remove_all(storage_location + raw_directory);
     std::filesystem::create_directory(storage_location + raw_directory);
+    std::filesystem::remove_all(storage_location + backup_directory);
+    std::filesystem::create_directory(storage_location + backup_directory);
 }

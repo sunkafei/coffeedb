@@ -10,76 +10,90 @@
 #include <random>
 #include <queue>
 #include <thread>
+#include <ranges>
+#include <tuple>
 #include "utility.h"
 #include "index.h"
 std::regex range_pattern(R"(\s*(\[|\()\s*(.+)\s*,\s*(.+)(\]|\))\s*)");
 std::mutex mutex;
 std::condition_variable condition_variable;
 std::default_random_engine engine(20140920);
-std::deque<std::pair<void*, void*>> segments;
+std::queue<std::tuple<void*, void*, int64_t>> segments;
 int64_t chuck_size, rest;
-template<typename T> void parallel_sort(auto compare) {
-    static_assert(sizeof(compare) <= 8);
+void integer_index::add(int64_t id, int64_t value) {
+    data.emplace_back(value, id);
+}
+void integer_index::build() {
+    std::sort(data.begin(), data.end());
+    data.shrink_to_fit();
+}
+void double_index::add(int64_t id, double value) {
+    data.emplace_back(value, id);
+}
+void double_index::build() {
+    std::sort(data.begin(), data.end());
+    data.shrink_to_fit();
+}
+template<typename T> void string_index::parallel_sort() {
+    int32_t right[256 + 8], pos[256 + 8];
     for (;;) {
         std::unique_lock lock(mutex);
         condition_variable.wait(lock, []{ return !segments.empty() || rest == 0; });
         if (rest == 0) {
             break;
         }
-        auto pr = segments.front();
-        auto begin = (T*)pr.first, end = (T*)pr.second;
+        auto [void_begin, void_end, offset] = segments.front();
+        auto begin = (T*)void_begin, end = (T*)void_end;
         const auto length = end - begin;
-        int tmp = segments.size();
-        segments.pop_front();
+        segments.pop();
         if (length <= chuck_size) {
             rest -= length;
         }
         lock.unlock();
         if (length <= chuck_size) {
-            std::sort(begin, end, compare);
+            std::sort(begin, end, [this, offset](auto i, auto j) noexcept {
+                return suffix(i, offset) < suffix(j, offset);
+            });
             continue;
         }
         else {
-            std::uniform_int_distribution<int64_t> gen(0, length - 1);
-            auto pivot = begin[gen(engine)];
-            auto *middle = std::partition(begin, end, [pivot, compare](auto value) {
-                return compare(value, pivot);
-            });
+            std::ranges::fill(right, 0);
+            for (auto iter = begin; iter != end; ++iter) {
+                right[character(*iter, offset)] += 1;
+            }
+            for (int i = 1; i < std::size(right); ++i) {
+                right[i] += right[i - 1];
+            }
+            std::copy(std::begin(right), std::end(right), pos);
+            int32_t now = 0;
+            for (int64_t i = 0; i < length; ++i) {
+                while (i == right[now]) {
+                    now += 1;
+                }
+                for (;;) {
+                    auto c = character(begin[i], offset);
+                    if (c == now) {
+                        break;
+                    }
+                    pos[c] -= 1;
+                    std::swap(begin[i], begin[pos[c]]);
+                }
+            }
             std::lock_guard guard(mutex);
-            if (middle - begin > chuck_size) {
-                segments.emplace_front(begin, middle);
-            }
-            else {
-                segments.emplace_back(begin, middle);
-            }
-            if (end - middle > chuck_size) {
-                segments.emplace_front(middle, end);
-            }
-            else {
-                segments.emplace_back(middle, end);
+            rest -= right[0];
+            for (int i = 1; i < std::ssize(right); ++i) {
+                if (right[i] - right[i - 1] > 0) {
+                    segments.emplace(begin + right[i - 1], begin + right[i], offset + 1);
+                }
             }
         }
         condition_variable.notify_one();
         condition_variable.notify_one();
     }
 }
-void integer_index::add(int64_t id, int64_t value) {
-    data.emplace_back(value, id);
-}
-void double_index::add(int64_t id, double value) {
-    data.emplace_back(value, id);
-}
 void string_index::add(int64_t id, std::string_view value) {
     ids.push_back(id);
     data.emplace_back(value);
-}
-void integer_index::build() {
-    std::sort(data.begin(), data.end());
-    data.shrink_to_fit();
-}
-void double_index::build() {
-    std::sort(data.begin(), data.end());
-    data.shrink_to_fit();
 }
 void string_index::build() {
     ids.shrink_to_fit();
@@ -119,15 +133,13 @@ void string_index::build() {
             }
         }
         while (segments.size()) {
-            segments.pop_back();
+            segments.pop();
         }
-        segments.emplace_back(sa, sa + size);
+        segments.emplace(sa, sa + size, 0);
         chuck_size = std::max((uint64_t)2048, this->size / 128);
         rest = this->size;
         auto worker = [this](){
-            parallel_sort<T>([this](auto i, auto j) noexcept {
-                return locate(i) < locate(j);
-            });
+            parallel_sort<T>();
         };
         std::vector<std::thread> threads;
         for (int i = 0; i + 1 < std::thread::hardware_concurrency(); ++i) {
@@ -138,7 +150,7 @@ void string_index::build() {
             thread.join();
         }
         /*std::sort(std::execution::par, sa, sa + size, [this](auto i, auto j) noexcept {
-            return locate(i) < locate(j);
+            return suffix(i) < suffix(j);
         });*/
     }, sa);
 }
@@ -200,7 +212,7 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
         while (L < R) {
             int64_t M = L + (R - L) / 2;
             auto i = sa[M];
-            std::string_view content = locate(i);
+            std::string_view content = suffix(i);
             if (keyword_view <= content) {
                 R = M;
             }
@@ -213,7 +225,7 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
         while (L < R) {
             int64_t M = L + (R - L + 1) / 2;
             auto i = sa[M];
-            std::string_view content = locate(i);
+            std::string_view content = suffix(i);
             if (content.size() >= keyword_view.size() && keyword_view == content.substr(0, keyword_view.size())) {
                 L = M;
             }

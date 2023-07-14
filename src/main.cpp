@@ -45,7 +45,7 @@ void test() {
     response(R"({
         "operation": "query",
         "constraints": {
-            "range": ["[100,200]", "[998,999]"]
+            "id": "cd"
         },
         "fields": ["id"]
     })"_json);
