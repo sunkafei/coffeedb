@@ -47,12 +47,12 @@ private:
     std::vector<int64_t> ids;
     std::vector<std::string_view> data;
     std::variant<uint32_t*, uint64_t*> sa;
-    inline std::string_view suffix(auto position, int64_t offset = 0) noexcept {
+    inline std::string_view suffix(auto position, uint64_t offset = 0) noexcept {
         auto index1 = position & mask;
         auto index2 = (position >> bits) + offset;
         return data[index1].substr(index2);
     }
-    inline int32_t character(auto position, int64_t offset = 0) noexcept {
+    inline int32_t character(auto position, uint64_t offset = 0) noexcept {
         auto index1 = position & mask;
         auto index2 = (position >> bits) + offset;
         if (index2 == data[index1].size()) {

@@ -17,7 +17,7 @@
 std::regex range_pattern(R"(\s*(\[|\()\s*(.+)\s*,\s*(.+)(\]|\))\s*)");
 std::mutex mutex;
 std::condition_variable condition_variable;
-std::default_random_engine engine(20140920);
+std::default_random_engine engine;
 std::queue<std::tuple<void*, void*, int64_t>> segments;
 int64_t chuck_size, rest;
 void integer_index::add(int64_t id, int64_t value) {
@@ -61,7 +61,7 @@ template<typename T> void string_index::parallel_sort() {
             for (auto iter = begin; iter != end; ++iter) {
                 right[character(*iter, offset)] += 1;
             }
-            for (int i = 1; i < std::size(right); ++i) {
+            for (int i = 1; i < std::ssize(right); ++i) {
                 right[i] += right[i - 1];
             }
             std::copy(std::begin(right), std::end(right), pos);
@@ -136,13 +136,13 @@ void string_index::build() {
             segments.pop();
         }
         segments.emplace(sa, sa + size, 0);
-        chuck_size = std::max((uint64_t)2048, this->size / 128);
+        chuck_size = std::max((uint64_t)4096, this->size / 256);
         rest = this->size;
         auto worker = [this](){
             parallel_sort<T>();
         };
         std::vector<std::thread> threads;
-        for (int i = 0; i + 1 < std::thread::hardware_concurrency(); ++i) {
+        for (unsigned i = 0; i + 1 < std::thread::hardware_concurrency(); ++i) {
             threads.emplace_back(worker);
         }
         worker();
@@ -248,22 +248,21 @@ std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &
             else { // RadixSort
                 std::vector<uint64_t> c(base + 8, 0);
                 std::vector<uint64_t> tmp(n, 0);
-                for (int j = 0; j < n; ++j)
+                for (uint64_t j = 0; j < n; ++j)
                     c[indices[j] & base]++;
-                for (int j = 1; j <= base; ++j)
+                for (uint64_t j = 1; j <= base; ++j)
                     c[j] += c[j - 1];
-                for (int j = n - 1; j >= 0; --j)
+                for (int64_t j = n - 1; j >= 0; --j)
                     tmp[--c[indices[j] & base]] = indices[j];
                 c = std::vector<uint64_t>(base + 8, 0);
-                for (int j = 0; j < n; ++j)
+                for (uint64_t j = 0; j < n; ++j)
                     c[(tmp[j] >> 16) & base]++;
-                for (int j = 1; j <= base; ++j)
+                for (uint64_t j = 1; j <= base; ++j)
                     c[j] += c[j - 1];
-                for (int j = n - 1; j >= 0; --j)
+                for (int64_t j = n - 1; j >= 0; --j)
                     indices[--c[(tmp[j] >> 16) & base]] = tmp[j];
             }
             indices.push_back(std::numeric_limits<uint64_t>::max());
-            uint64_t last = 0;
             for (uint64_t last = 0, i = 1; i < indices.size(); ++i) {
                 if (indices[i] != indices[i - 1]) {
                     ret.emplace_back(ids[indices[last]], i - last);
