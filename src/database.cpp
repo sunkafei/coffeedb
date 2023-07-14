@@ -33,6 +33,8 @@ void build() {
         if (!fp) {
             throw std::runtime_error("Cannot open file: " + path);
         }
+        auto deleter = [](FILE* file){ fclose(file); };
+        const std::unique_ptr<FILE, decltype(deleter)> file_guard(fp);
         bool success = true;
         int64_t id;
         int32_t size;
@@ -165,6 +167,8 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
     if (!fp) {
         throw std::runtime_error("Cannot open file: " + filename);
     }
+    auto deleter = [](FILE* file){ fclose(file); };
+    const std::unique_ptr<FILE, decltype(deleter)> file_guard(fp);
     int32_t size = object.size();
     fwrite(&id, sizeof(id), 1, fp);
     fwrite(&size, sizeof(size), 1, fp);
@@ -197,7 +201,6 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
             }
         }, value);
     }
-    fclose(fp);
 }
 std::vector<std::pair<int64_t, int64_t>> query() {
     std::vector<std::pair<int64_t, int64_t>> ret;

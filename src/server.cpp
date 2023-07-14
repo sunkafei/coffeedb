@@ -22,8 +22,13 @@ void start_server() {
     print("Starting CoffeeDB ...");
     init();
     build();
-    print(std::format("Working directory: {}", ::storage_location));
-    print(std::format("Running at http://{}:{}/coffeedb", ip, ::port));
+    if (!server.is_valid()) {
+        throw std::runtime_error("Server has an error");
+    }
+    server.set_error_handler([](const httplib::Request & /*req*/, httplib::Response &res) {
+        auto message = std::format("<p>Error Status: <span style='color:red;'>{}</span></p>", res.status);
+        res.set_content(message, "text/html");
+    });
     server.Post("/coffeedb", [](const httplib::Request &req, httplib::Response &res) {
         try {
             std::string reply = response(json::parse(req.body));
@@ -47,6 +52,8 @@ void start_server() {
     };
     server.Get("/", response_get);
     server.Get("/coffeedb", response_get);
+    print(std::format("Working directory: {}", ::storage_location));
+    print(std::format("Running at http://{}:{}/coffeedb", ip, ::port));
     if (!server.listen("0.0.0.0", ::port)) {
         throw std::runtime_error(std::format("Failed to listen on port {}", ::port));
     }
