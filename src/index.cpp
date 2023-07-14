@@ -35,7 +35,7 @@ void double_index::build() {
     data.shrink_to_fit();
 }
 template<typename T> void string_index::parallel_sort() {
-    int32_t right[256 + 8], pos[256 + 8];
+    int64_t right[256 + 8], pos[256 + 8];
     for (;;) {
         std::unique_lock lock(mutex);
         condition_variable.wait(lock, []{ return !segments.empty() || rest == 0; });
@@ -65,7 +65,7 @@ template<typename T> void string_index::parallel_sort() {
                 right[i] += right[i - 1];
             }
             std::copy(std::begin(right), std::end(right), pos);
-            int32_t now = 0;
+            int64_t now = 0;
             for (int64_t i = 0; i < length; ++i) {
                 while (i == right[now]) {
                     now += 1;
