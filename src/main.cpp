@@ -49,6 +49,13 @@ void test() {
         },
         "fields": ["id"]
     })"_json);
+    response(R"({
+        "operation": "query",
+        "constraints": {
+            "id": "cd"
+        },
+        "fields": {"id"}
+    })"_json);
     //response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
 }
 int main(int argc, char *argv[]) {

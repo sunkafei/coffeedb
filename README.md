@@ -13,6 +13,7 @@
   - [Remove](#remove)
   - [Build](#build)
   - [Query](#query)
+- [Benchmark](#benchmark)
 
 ## Get Started
 [Download](https://github.com/sunkafei/coffeedb/releases) CoffeeDB, put it under any folder, run `./coffeedb`, then CoffeeDB will create a database under this folder and start the service. By default, the service address is http://127.0.0.1:14920/coffeedb. All database operations are handled by the Post method of this address.
@@ -191,3 +192,13 @@ The following example means: select all objects whose `name` contains "coffee" a
 
 
 You can find more use cases of the `query` operation in [Get Started](#get-started).
+
+## Benchmark
+We tested the running time of a single keyword query under different data scales, as shown below.
+|The amount of data|Query time|
+|-|-|
+|1GB|1.2ms|
+|2GB|1.3ms|
+|4GB|1.5ms|
+|8GB|2.0ms|
+Details can be found [here](test/benchmark.py).
