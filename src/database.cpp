@@ -15,7 +15,6 @@
 #include "config.h"
 #include "utility.h"
 #include "index.h"
-constexpr std::string key_correlation("$correlation");
 std::map<std::string, std::unique_ptr<index>> indices;
 std::unordered_map<int64_t, std::map<std::string, var>> data;
 std::shared_mutex mutex_data;
@@ -219,6 +218,7 @@ std::vector<std::pair<int64_t, int64_t>> query(const std::string& key, const std
 std::vector<std::vector<std::pair<const std::string, var>>> select(const std::vector<std::pair<int64_t, int64_t>>& results, const std::vector<std::string> &keys) {
     std::shared_lock lock(mutex_data);
     std::vector<std::vector<std::pair<const std::string, var>>> ret;
+    auto flag = (keys.empty() || std::find(keys.cbegin(), keys.cend(), key_correlation) != keys.end());
     for (auto [id, correlation] : results) {
         std::vector<std::pair<const std::string, var>> object;
         if (keys.size()) {
@@ -234,7 +234,7 @@ std::vector<std::vector<std::pair<const std::string, var>>> select(const std::ve
                 object.push_back(*iter);
             }
         }
-        if (correlation && (keys.empty() || std::find(keys.cbegin(), keys.cend(), key_correlation) != keys.end())) {
+        if (correlation && flag) {
             object.emplace_back(key_correlation, correlation);
         }
         if (object.size()) {

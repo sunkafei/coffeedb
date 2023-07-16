@@ -6,6 +6,7 @@
 #include <vector>
 #include <format>
 #include <ranges>
+#include <optional>
 #include "interface.h"
 #include "utility.h"
 #include "config.h"
@@ -24,7 +25,9 @@ json jsonify(const std::vector<std::pair<const std::string, var>>& object) {
     return j;
 }
 auto filter(const json &data) {
+    std::optional<std::pair<int64_t, int64_t>> correlation_range;
     std::vector<std::pair<int64_t, int64_t>> answer;
+    bool first = true;
     const auto &items = data.items();
     if (items.begin() == items.end()) { // No constraints
         return query();
@@ -32,6 +35,10 @@ auto filter(const json &data) {
     for (auto iter = items.begin(); iter != items.end(); ++iter) {
         const auto &item = *iter;
         std::vector<std::string> ranges;
+        if (item.key() == key_correlation) {
+            correlation_range = parse_int_range(item.value());
+            continue;
+        }
         if (item.value().is_array()) {
             for (const auto &range : item.value()) {
                 if (!range.is_string()) {
@@ -50,7 +57,7 @@ auto filter(const json &data) {
             throw std::runtime_error(std::format("The constraint list of \"{}\" cannot be empty", item.key()));
         }
         std::vector<std::pair<int64_t, int64_t>> result;
-        for (int i = 0; i < ranges.size(); ++i) {
+        for (int64_t i = 0; i < ssize(ranges); ++i) {
             if (i == 0) {
                 result = query(item.key(), ranges[i]);
                 std::ranges::sort(result);
@@ -85,8 +92,9 @@ auto filter(const json &data) {
                 result = std::move(tmp);
             }
         }
-        if (iter == items.begin()) {
+        if (first) {
             answer = std::move(result);
+            first = false;
         }
         else {
             std::vector<std::pair<int64_t, int64_t>> tmp;
@@ -107,6 +115,16 @@ auto filter(const json &data) {
             answer = std::move(tmp);
         }
     }
+    if (correlation_range) {
+        auto [L, R] = *correlation_range;
+        auto iter = std::remove_if(answer.begin(), answer.end(), [L, R](auto pair) {
+            return !(pair.second >= L && pair.second < R);
+        });
+        answer.erase(iter, answer.end());
+    }
+    std::sort(answer.begin(), answer.end(), [](auto x, auto y) {
+        return x.second > y.second; // Sort in descending order of $correlation.
+    });
     return answer;
 }
 std::string response(json command) {

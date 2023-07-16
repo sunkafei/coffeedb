@@ -5,6 +5,7 @@
 #include <utility>
 #include <stdexcept>
 #include <charconv>
+#include <regex>
 auto output(auto&& param) {
     if constexpr (requires {std::cerr << param; }) {
         std::cerr << param;
@@ -62,5 +63,42 @@ auto value_conv(std::string str, auto &value) {
             throw std::runtime_error("Invalid value: " + str);
         }
     }
+}
+inline const std::regex range_pattern(R"(\s*(\[|\()\s*(.+)\s*,\s*(.+)(\]|\))\s*)");
+template<typename T> auto parse_range(const std::string &range) {
+    std::pair<T, int64_t> L = {}, R = {};
+    std::smatch result;
+    if (std::regex_match(range, result, range_pattern)) {
+        value_conv(result.str(2), L.first);
+        value_conv(result.str(3), R.first);
+        if (result.str(1) == "(") {
+            L.second = std::numeric_limits<int64_t>::max();
+        }
+        if (result.str(4) == "]") {
+            R.second = std::numeric_limits<int64_t>::max();
+        }
+    }
+    else {
+        throw std::runtime_error("Invalid range: " + range);
+    }
+    return std::make_pair(L, R);
+}
+inline auto parse_int_range(const std::string &range) {
+    std::smatch result;
+    int64_t L, R;
+    if (std::regex_match(range, result, range_pattern)) {
+        value_conv(result.str(2), L);
+        value_conv(result.str(3), R);
+        if (result.str(1) == "(") {
+            L += 1;
+        }
+        if (result.str(4) == "]") {
+            R += 1;
+        }
+    }
+    else {
+        throw std::runtime_error("Invalid range: " + range);
+    }
+    return std::make_pair(L, R);
 }
 #endif

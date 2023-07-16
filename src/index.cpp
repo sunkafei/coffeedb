@@ -1,6 +1,5 @@
 //#include <execution>
 #include <algorithm>
-#include <regex>
 #include <cctype>
 #include <limits>
 #include <string_view>
@@ -14,7 +13,6 @@
 #include <tuple>
 #include "utility.h"
 #include "index.h"
-std::regex range_pattern(R"(\s*(\[|\()\s*(.+)\s*,\s*(.+)(\]|\))\s*)");
 std::mutex mutex;
 std::condition_variable condition_variable;
 std::default_random_engine engine;
@@ -156,21 +154,7 @@ void string_index::build() {
 }
 std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const std::string &range) {
     using T = std::decay_t<decltype(data[0].first)>;
-    std::pair<T, int64_t> L = {}, R = {};
-    std::smatch result;
-    if (std::regex_match(range, result, range_pattern)) {
-        value_conv(result.str(2), L.first);
-        value_conv(result.str(3), R.first);
-        if (result.str(1) == "(") {
-            L.second = std::numeric_limits<int64_t>::max();
-        }
-        if (result.str(4) == "]") {
-            R.second = std::numeric_limits<int64_t>::max();
-        }
-    }
-    else {
-        throw std::runtime_error("Invalid query: " + range);
-    }
+    auto [L, R] = parse_range<T>(range);
     auto begin = std::lower_bound(data.begin(), data.end(), L);
     auto end = std::lower_bound(data.begin(), data.end(), R);
     std::vector<std::pair<int64_t, int64_t>> ret;

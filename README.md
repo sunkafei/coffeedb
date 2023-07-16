@@ -202,4 +202,4 @@ We tested the running time of a single keyword query under different data scales
 |4GB|1.5ms|
 |8GB|2.0ms|
 
-The test script can be found  [here](test/benchmark.py).
+The test script can be found [here](test/benchmark.py).

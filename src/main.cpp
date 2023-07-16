@@ -34,7 +34,7 @@ void test() {
     response(R"({
         "operation":"insert", 
         "data":{
-            "id": "efgcd7",
+            "id": "cdcdcd",
             "name": "smz",
             "range": 999
         }
@@ -45,18 +45,19 @@ void test() {
     response(R"({
         "operation": "query",
         "constraints": {
-            "id": "cd"
+            "id": "cd",
+            "$correlation": " [1,3] "
         },
-        "fields": ["id"]
+        "fields": ["id", "$correlation"]
     })"_json);
-    response(R"({
+    /*response(R"({
         "operation": "query",
         "constraints": {
             "id": "cd"
         },
         "fields": {"id"}
     })"_json);
-    //response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);
+    response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);*/
 }
 int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"clear"}'
@@ -64,9 +65,9 @@ int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]}'
     try {
         parse_command(argc, argv);
-        //test();
+        test();
         //profile_string_process();
-        start_server();
+        //start_server();
     }
     catch (std::exception &e) {
         std::string message = std::format("[Error] {}.", e.what());
