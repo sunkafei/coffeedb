@@ -27,14 +27,14 @@ void test() {
     response(R"({
         "operation":"insert", 
         "data": {
-            "id": "abcd",
+            "id": "rr01010r010rrr",
             "range": 123
         }
     })"_json);
     response(R"({
         "operation":"insert", 
         "data":{
-            "id": "cdcdcd",
+            "id": "gh010djf",
             "name": "smz",
             "range": 999
         }
@@ -45,10 +45,11 @@ void test() {
     response(R"({
         "operation": "query",
         "constraints": {
-            "id": "cd",
+            "id": "010",
             "$correlation": " [1,3] "
         },
-        "fields": ["id", "$correlation"]
+        "fields": ["id", "$correlation"],
+        "highlight": ["<", ">"]
     })"_json);
     /*response(R"({
         "operation": "query",
@@ -65,9 +66,9 @@ int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]}'
     try {
         parse_command(argc, argv);
-        //test();
+        test();
         //profile_string_process();
-        start_server();
+        //start_server();
     }
     catch (std::exception &e) {
         std::string message = std::format("[Error] {}.", e.what());

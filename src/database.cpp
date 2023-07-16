@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <mutex>
 #include <shared_mutex>
+#include <queue>
 #include "config.h"
 #include "utility.h"
 #include "index.h"
@@ -19,6 +20,146 @@ std::map<std::string, std::unique_ptr<index>> indices;
 std::unordered_map<int64_t, std::map<std::string, var>> data;
 std::shared_mutex mutex_data;
 std::shared_mutex mutex_files;
+class ac_automaton {
+public:
+    static constexpr int32_t alphabet_size = 256;
+    ac_automaton(const ac_automaton&) = delete;
+    ac_automaton(ac_automaton&&) = delete;
+    ac_automaton& operator= (const ac_automaton&) = delete;
+    ac_automaton(const std::vector<std::string> &keywords) {
+        int32_t total = 4;
+        for (const auto &keyword : keywords) {
+            total += keyword.size();
+        }
+        this->go = new int32_t[total][alphabet_size];
+        this->fail = new int32_t[total];
+        this->length = new int32_t[total];
+        this->size = 1;
+        for (int32_t i = 0; i < total; ++i) {
+            this->fail[i] = 0;
+            this->length[i] = 0;
+            for (int32_t j = 0; j < alphabet_size; ++j) {
+                this->go[i][j] = 0;
+            }
+        }
+        for (const auto &keyword : keywords) {
+            this->insert(keyword);
+        }
+        this->getfail();
+    }
+    ~ac_automaton() {
+        delete[] go;
+        delete[] fail;
+        delete[] length;
+    }
+    std::string render(const std::string &text, const std::string &left, const std::string &right) const {
+        int node = 0;
+        std::string ret;
+        std::vector<std::pair<uint64_t, uint64_t>> spans;
+        for (uint64_t i = 0; i < text.size(); ++i) {
+            auto c = idx(text[i]);
+            node = go[node][c];
+            if (length[node]) {
+                auto begin = i - length[node] + 1;
+                while (spans.size() && begin <= spans.back().first) {
+                    spans.pop_back();
+                }
+                if (spans.size() && begin <= spans.back().second) {
+                    spans.back().second = i;
+                }
+                else {
+                    spans.emplace_back(begin, i);
+                }
+            }
+        }
+        ret.reserve(text.size() + (left.size() + right.size()) * spans.size() + 1);
+        auto iter = spans.begin();
+        for (uint64_t i = 0; i < text.size(); ++i) {
+            if (iter != spans.end() && i == iter->first) {
+                ret += left;
+            }
+            ret += text[i];
+            if (iter != spans.end() && i == iter->second) {
+                ret += right;
+                ++iter;
+            }
+        }
+        return ret;
+    }
+private:
+    int32_t size;
+	int32_t (*go)[256];
+	int32_t *fail;
+	int32_t *length;
+	int32_t idx(int32_t c) const {
+		return c - std::numeric_limits<char>::min();
+	}
+	void insert(const std::string& str) {
+		int32_t u = 0;
+		for (int32_t i = 0; i < ssize(str); i++) {
+			int32_t c = idx(str[i]);
+			if (!go[u][c]) {
+				go[u][c] = size++;
+			}
+			u = go[u][c];
+		}
+		length[u] = str.size();
+	}
+	void getfail() {
+		std::queue<int32_t> Q;
+		fail[0] = 0;
+		for (int32_t c = 0; c < alphabet_size; ++c) {
+			int32_t u = go[0][c];
+			if (u) {
+                Q.push(u);
+            }
+		}
+		while (!Q.empty()) {
+			int32_t r = Q.front(); Q.pop();
+			for (int32_t c = 0; c < alphabet_size; ++c) {
+				int32_t u = go[r][c];
+				if (!u) {
+					go[r][c] = go[fail[r]][c];
+					continue;
+				}
+				Q.push(u);
+				int32_t v = fail[r];
+				while (v && !go[v][c]) {
+                    v = fail[v];
+                }
+				fail[u] = go[v][c];
+                length[u] = std::max(length[u], length[fail[u]]);
+			}
+		}
+	}
+};
+class renderer {
+private:
+    std::map<std::string, ac_automaton> automatons;
+    std::string left;
+    std::string right;
+public:
+    renderer(const auto& container, const std::string& left, const std::string& right) : left(left), right(right) {
+        for (const auto& [key, keywords] : container) {
+            if (indices.contains(key) && dynamic_cast<string_index*>(indices[key].get()) != nullptr) {
+                automatons.emplace(key, keywords);
+            }
+        }
+    }
+    var operator()(const std::string& key, const var &data) const {
+        return std::visit([this, &key]<typename T>(const T& value) -> var {
+            if constexpr (std::is_same_v<T, std::string>) {
+                return automatons.at(key).render(value, left, right);
+            }
+            else {
+                return value;
+            }
+        }, data);
+    }
+    var operator()(const auto& pair) const {
+        return operator()(pair.first, pair.second);
+    }
+};
 void init() {
     std::filesystem::create_directory(storage_location + backup_directory);
     std::filesystem::create_directory(storage_location + raw_directory);
@@ -215,23 +356,43 @@ std::vector<std::pair<int64_t, int64_t>> query(const std::string& key, const std
     std::shared_lock lock(mutex_data);
     return indices[key]->query(range);
 }
-std::vector<std::vector<std::pair<const std::string, var>>> select(const std::vector<std::pair<int64_t, int64_t>>& results, const std::vector<std::string> &keys) {
+std::vector<std::vector<std::pair<const std::string, var>>> select(const std::vector<std::pair<int64_t, int64_t>>& results, 
+    const std::vector<std::string> &keys, const std::vector<std::pair<std::string, std::vector<std::string>>>& constraints,
+    const std::string &left, const std::string &right) {
     std::shared_lock lock(mutex_data);
+    renderer transformer(constraints, left, right);
     std::vector<std::vector<std::pair<const std::string, var>>> ret;
     auto flag = (keys.empty() || std::find(keys.cbegin(), keys.cend(), key_correlation) != keys.end());
     for (auto [id, correlation] : results) {
         std::vector<std::pair<const std::string, var>> object;
-        if (keys.size()) {
-            for (const auto &key : keys) {
-                auto iter = data[id].find(key);
-                if (iter != data[id].end()) {
-                    object.push_back(*iter);
+        if (constraints.size()) {
+            if (keys.size()) {
+                for (const auto &key : keys) {
+                    auto iter = data[id].find(key);
+                    if (iter != data[id].end()) {
+                        object.emplace_back(key, transformer(*iter));
+                    }
+                }
+            }
+            else {
+                for (auto iter = data[id].begin(); iter != data[id].end(); ++iter) {
+                    object.emplace_back(iter->first, transformer(*iter));
                 }
             }
         }
         else {
-            for (auto iter = data[id].begin(); iter != data[id].end(); ++iter) {
-                object.push_back(*iter);
+            if (keys.size()) {
+                for (const auto &key : keys) {
+                    auto iter = data[id].find(key);
+                    if (iter != data[id].end()) {
+                        object.push_back(*iter);
+                    }
+                }
+            }
+            else {
+                for (auto iter = data[id].begin(); iter != data[id].end(); ++iter) {
+                    object.push_back(*iter);
+                }
             }
         }
         if (correlation && flag) {

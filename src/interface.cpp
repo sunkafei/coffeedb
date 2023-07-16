@@ -15,7 +15,7 @@ void backup(int64_t timestamp, const json &command) {
     std::ofstream file(storage_location + backup_directory + std::to_string(timestamp));
     file << command << std::endl;
 }
-json jsonify(const std::vector<std::pair<const std::string, var>>& object) {
+json jsonify(const auto& object) {
     json j;
     for (const auto &[key, value] : object) {
         std::visit([&j, &key](auto && value) {
@@ -27,10 +27,11 @@ json jsonify(const std::vector<std::pair<const std::string, var>>& object) {
 auto filter(const json &data) {
     std::optional<std::pair<int64_t, int64_t>> correlation_range;
     std::vector<std::pair<int64_t, int64_t>> answer;
+    std::vector<std::pair<std::string, std::vector<std::string>>> constraints;
     bool first = true;
     const auto &items = data.items();
     if (items.begin() == items.end()) { // No constraints
-        return query();
+        return std::make_pair(constraints, query());
     }
     for (auto iter = items.begin(); iter != items.end(); ++iter) {
         const auto &item = *iter;
@@ -114,6 +115,7 @@ auto filter(const json &data) {
             }
             answer = std::move(tmp);
         }
+        constraints.emplace_back(item.key(), std::move(ranges));
     }
     if (correlation_range) {
         auto [L, R] = *correlation_range;
@@ -125,7 +127,7 @@ auto filter(const json &data) {
     std::sort(answer.begin(), answer.end(), [](auto x, auto y) {
         return x.second > y.second; // Sort in descending order of $correlation.
     });
-    return answer;
+    return std::make_pair(constraints, answer);
 }
 std::string response(json command) {
     std::string ret;
@@ -155,10 +157,10 @@ std::string response(json command) {
         command.erase(command.find("data"));
     }
     else if (operation == "query") {
+        std::vector<std::pair<std::string, std::vector<std::string>>> constraints;
         std::vector<std::pair<int64_t, int64_t>> result;
         if (command.contains("constraints")) {
-            auto constraints = command.at("constraints");
-            result = filter(constraints);
+            std::tie(constraints, result) = filter(command.at("constraints"));
             command.erase(command.find("constraints"));
         }
         else {
@@ -182,7 +184,20 @@ std::string response(json command) {
             }
             command.erase(command.find("fields"));
         }
-        auto list = select(result, fields);
+        std::string left, right;
+        if (command.contains("highlight")) {
+            auto list = command.at("highlight").template get<std::vector<std::string>>();
+            if (list.size() != 2) {
+                throw std::runtime_error("Invalid format of \"highlight\"");
+            }
+            left = list[0];
+            right = list[1];
+            command.erase(command.find("highlight"));
+        }
+        else {
+            constraints.clear();
+        }
+        auto list = select(result, fields, constraints, left, right);
         auto L = json::array();
         for (const auto &object : list) {
             L.push_back(jsonify(object));
@@ -194,7 +209,7 @@ std::string response(json command) {
             throw std::runtime_error("For security, the remove operation must have a \"constraints\" field");
         }
         auto constraints = command.at("constraints");
-        auto result = filter(constraints);
+        auto [_, result] = filter(constraints);
         remove(result);
         command.erase(command.find("constraints"));
     }
