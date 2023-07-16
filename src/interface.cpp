@@ -37,7 +37,7 @@ auto filter(const json &data) {
         const auto &item = *iter;
         std::vector<std::string> ranges;
         if (item.key() == key_correlation) {
-            correlation_range = parse_int_range(item.value());
+            correlation_range = parse_uint_range(item.value());
             continue;
         }
         if (item.value().is_array()) {
@@ -196,6 +196,16 @@ std::string response(json command) {
         }
         else {
             constraints.clear();
+        }
+        if (command.contains("span")) {
+            auto range = parse_uint_range(command.at("span"));
+            if (range.first >= ssize(result)) {
+                result.clear();
+            }
+            else {
+                result = { result.begin() + range.first, std::min(result.begin() + range.second, result.end()) };
+            }
+            command.erase(command.find("span"));
         }
         auto list = select(result, fields, constraints, left, right);
         auto L = json::array();

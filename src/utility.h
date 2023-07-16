@@ -83,9 +83,9 @@ template<typename T> auto parse_range(const std::string &range) {
     }
     return std::make_pair(L, R);
 }
-inline auto parse_int_range(const std::string &range) {
+inline auto parse_uint_range(const std::string &range) {
     std::smatch result;
-    int64_t L, R;
+    int64_t L = 1, R = 0;
     if (std::regex_match(range, result, range_pattern)) {
         value_conv(result.str(2), L);
         value_conv(result.str(3), R);
@@ -96,7 +96,7 @@ inline auto parse_int_range(const std::string &range) {
             R += 1;
         }
     }
-    else {
+    if (L > R || L < 0) {
         throw std::runtime_error("Invalid range: " + range);
     }
     return std::make_pair(L, R);
