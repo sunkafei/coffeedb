@@ -65,9 +65,9 @@ int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]}'
     try {
         parse_command(argc, argv);
-        test();
+        //test();
         //profile_string_process();
-        //start_server();
+        start_server();
     }
     catch (std::exception &e) {
         std::string message = std::format("[Error] {}.", e.what());
