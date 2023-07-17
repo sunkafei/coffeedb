@@ -31,12 +31,6 @@ void test() {
     send(R"({
         "operation": "insert",
         "data": {
-            "": "123"
-        }
-    })"_json);
-    send(R"({
-        "operation": "insert",
-        "data": {
             "number": 234,
             "name": "yulemao",
             "position": 1.7724,
@@ -75,6 +69,12 @@ void test() {
         "highlight": ["<b>", "</b>"],
         "span": " [0,1) "
     })"_json);
+    send(R"({
+        "operation": "query",
+        "constraints": {
+            "secret": ["0", ""]
+        }
+    })"_json);
 }
 int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"clear"}'
@@ -82,9 +82,9 @@ int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]}'
     try {
         parse_command(argc, argv);
-        //test();
+        test();
         //profile_string_process();
-        start_server();
+        //start_server();
     }
     catch (std::exception &e) {
         std::string message = std::format("[Error] {}.", e.what());

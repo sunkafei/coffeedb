@@ -178,6 +178,9 @@ std::vector<std::pair<int64_t, int64_t>> double_index::query(const std::string &
 }
 std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &keyword) {
     std::vector<std::pair<int64_t, int64_t>> ret;
+    if (keyword.empty()) {
+        throw std::runtime_error("Empty keywords are not allowed");
+    }
     /*for (int i = 0; i < data.size(); ++i) {
         const auto &content = data[i];
         auto id = ids[i];
