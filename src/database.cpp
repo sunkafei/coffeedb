@@ -228,7 +228,7 @@ void build() {
             else if (type == string_index::number) {
                 int32_t length;
                 success |= (fread(&length, sizeof(length), 1, fp) == sizeof(length));
-                if (length <= 0) {
+                if (length < 0) {
                     success = false;
                     break;
                 }
@@ -264,7 +264,13 @@ void build() {
     ::data = std::move(data);
 }
 void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) {
+    if (object.empty()) {
+        throw std::runtime_error("Empty objects are not allowed");
+    }
     for (std::unique_lock lock(mutex_data); const auto &[key, value] : object) {
+        if (key.empty()) {
+            throw std::runtime_error("Empty keys are not allowed");
+        }
         if (!indices.count(key)) {
             std::visit([&key]<typename T>(const T& value){
                 if constexpr (std::is_same_v<T, int64_t>) {

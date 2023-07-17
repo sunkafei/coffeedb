@@ -13,7 +13,7 @@ void test() {
     json a;
     auto send = [](auto &&message) {
         try {
-            print(::response(message));
+            print("==> ", ::response(message));
         }
         catch (std::exception &e) {
             std::string message = std::format("[ERROR] {}.", e.what());
@@ -26,6 +26,12 @@ void test() {
             "number": 123,
             "name": "sunkafei",
             "secret": "3010103"
+        }
+    })"_json);
+    send(R"({
+        "operation": "insert",
+        "data": {
+            "": "123"
         }
     })"_json);
     send(R"({
@@ -76,9 +82,9 @@ int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]}'
     try {
         parse_command(argc, argv);
-        //test();
+        test();
         //profile_string_process();
-        start_server();
+        //start_server();
     }
     catch (std::exception &e) {
         std::string message = std::format("[Error] {}.", e.what());

@@ -20,7 +20,7 @@ public:
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
         CONSOLE_SCREEN_BUFFER_INFO csbi;
         GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-        this->width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+        this->width = std::max(csbi.srWindow.Right - csbi.srWindow.Left + 1, 1);
 #else
         struct winsize size;
         ioctl(STDIN_FILENO, TIOCGWINSZ, &size);
