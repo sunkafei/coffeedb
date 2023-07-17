@@ -13,11 +13,13 @@
 #include <tuple>
 #include "utility.h"
 #include "index.h"
+#include "progress_bar.h"
 std::mutex mutex;
 std::condition_variable condition_variable;
 std::default_random_engine engine;
 std::queue<std::tuple<void*, void*, int64_t>> segments;
-int64_t chuck_size, rest;
+int64_t chuck_size, rest, total;
+progress_bar bar;
 void integer_index::add(int64_t id, int64_t value) {
     data.emplace_back(value, id);
 }
@@ -38,6 +40,7 @@ template<typename T> void string_index::parallel_sort() {
         std::unique_lock lock(mutex);
         condition_variable.wait(lock, []{ return !segments.empty() || rest == 0; });
         if (rest == 0) {
+            condition_variable.notify_one();
             break;
         }
         auto [void_begin, void_end, offset] = segments.front();
@@ -46,6 +49,7 @@ template<typename T> void string_index::parallel_sort() {
         segments.pop();
         if (length <= chuck_size) {
             rest -= length;
+            bar.update(1.0 * (total - rest) / total);
         }
         lock.unlock();
         if (length <= chuck_size) {
@@ -79,6 +83,7 @@ template<typename T> void string_index::parallel_sort() {
             }
             std::lock_guard guard(mutex);
             rest -= right[0];
+            bar.update(1.0 * (total - rest) / total);
             for (int i = 1; i < std::ssize(right); ++i) {
                 if (right[i] - right[i - 1] > 0) {
                     segments.emplace(begin + right[i - 1], begin + right[i], offset + 1);
@@ -94,6 +99,7 @@ void string_index::add(int64_t id, std::string_view value) {
     data.emplace_back(value);
 }
 void string_index::build() {
+    bar = progress_bar("Build progress");
     ids.shrink_to_fit();
     data.shrink_to_fit();
     this->size = 0;
@@ -135,7 +141,7 @@ void string_index::build() {
         }
         segments.emplace(sa, sa + size, 0);
         chuck_size = std::max((uint64_t)4096, this->size / 256);
-        rest = this->size;
+        rest = total = this->size;
         auto worker = [this](){
             parallel_sort<T>();
         };

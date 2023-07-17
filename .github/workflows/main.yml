@@ -35,6 +35,7 @@ jobs:
             run: |
               python examples/example.py
               python test/test-string.py
+              python test/test-highlight.py
           
             
           
