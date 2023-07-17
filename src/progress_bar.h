@@ -15,7 +15,7 @@ public:
         struct winsize size;
         ioctl(STDIN_FILENO, TIOCGWINSZ, &size);
         this->width = size.ws_col;
-        this->length = width - hint.size() - 8;
+        this->length = std::max(width - ssize(hint) - 8, 1z);
         this->temp = std::format("\r\033[1;36m{}: [{{:<{}}}]{{:3}}%\033[0m", hint, length);
         update(0);
     }
