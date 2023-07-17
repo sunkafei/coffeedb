@@ -34,7 +34,7 @@ void double_index::build() {
     std::sort(data.begin(), data.end());
     data.shrink_to_fit();
 }
-template<typename T> void string_index::parallel_sort() {
+template<typename T> void string_index::parallel_sort() const {
     int64_t right[256 + 8], pos[256 + 8];
     for (;;) {
         std::unique_lock lock(mutex);
@@ -170,13 +170,13 @@ std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const s
     }
     return ret;
 }
-std::vector<std::pair<int64_t, int64_t>> integer_index::query(const std::string &range) {
+std::vector<std::pair<int64_t, int64_t>> integer_index::query(const std::string &range) const {
     return numeric_query(data, range);
 }
-std::vector<std::pair<int64_t, int64_t>> double_index::query(const std::string &range) {
+std::vector<std::pair<int64_t, int64_t>> double_index::query(const std::string &range) const {
     return numeric_query(data, range);
 }
-std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &keyword) {
+std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &keyword) const {
     std::vector<std::pair<int64_t, int64_t>> ret;
     if (keyword.empty()) {
         throw std::runtime_error("Empty keywords are not allowed");

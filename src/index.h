@@ -12,7 +12,7 @@ public:
     index(index&&) = delete;
     index &operator= (const index&) = delete;
     index &operator= (index&&) = delete;
-    virtual std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) {
+    virtual std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) const {
         throw std::logic_error("Unimplemented method index::query");
     }
     virtual void build() {
@@ -28,7 +28,7 @@ public:
     static constexpr int8_t number = 0;
     void add(int64_t id, int64_t value);
     void build() override;
-    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) override;
+    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) const override;
 };
 class double_index : public index {
 private:
@@ -38,7 +38,7 @@ public:
     static constexpr int8_t number = 1;
     void add(int64_t id, double value);
     void build() override;
-    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) override;
+    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) const override;
 };
 class string_index : public index {
 private:
@@ -47,12 +47,12 @@ private:
     std::vector<int64_t> ids;
     std::vector<std::string_view> data;
     std::variant<uint32_t*, uint64_t*> sa;
-    inline std::string_view suffix(auto position, uint64_t offset = 0) noexcept {
+    inline std::string_view suffix(auto position, uint64_t offset = 0) const noexcept {
         auto index1 = position & mask;
         auto index2 = (position >> bits) + offset;
         return data[index1].substr(index2);
     }
-    inline int32_t character(auto position, uint64_t offset = 0) noexcept {
+    inline int32_t character(auto position, uint64_t offset = 0) const noexcept {
         auto index1 = position & mask;
         auto index2 = (position >> bits) + offset;
         if (index2 == data[index1].size()) {
@@ -65,12 +65,12 @@ public:
     static constexpr int8_t number = 2;
     void add(int64_t id, std::string_view value);
     void build() override;
-    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) override;
+    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) const override;
     ~string_index() override {
         std::visit([](auto *sa) {
             delete[] sa;
         }, sa);
     }
-    template<typename T> void parallel_sort();
+    template<typename T> void parallel_sort() const;
 };
 #endif

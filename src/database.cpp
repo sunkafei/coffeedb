@@ -351,16 +351,16 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
 }
 std::vector<std::pair<int64_t, int64_t>> query() {
     std::vector<std::pair<int64_t, int64_t>> ret;
-    for (const auto &[id, _] : data) {
+    for (std::shared_lock lock(mutex_data); const auto &[id, _] : data) {
         ret.emplace_back(id, 0);
     }
     return ret;
 }
 std::vector<std::pair<int64_t, int64_t>> query(const std::string& key, const std::string& range) {
+    std::shared_lock lock(mutex_data);
     if (!indices.count(key)) {
         return {};
     }
-    std::shared_lock lock(mutex_data);
     return indices[key]->query(range);
 }
 std::vector<std::vector<std::pair<const std::string, var>>> select(const std::vector<std::pair<int64_t, int64_t>>& results, 
@@ -412,12 +412,13 @@ std::vector<std::vector<std::pair<const std::string, var>>> select(const std::ve
     return ret;
 }
 void remove(const std::vector<std::pair<int64_t, int64_t>>& result) {
-    std::shared_lock lock(mutex_files);
+    std::unique_lock lock(mutex_files);
     for (auto [id, _] : result) {
         std::filesystem::remove(storage_location + raw_directory + std::format("{}", id));
     }
 }
 void clear() {
+    std::unique_lock lock(mutex_files);
     std::filesystem::remove_all(storage_location + raw_directory);
     std::filesystem::create_directory(storage_location + raw_directory);
     std::filesystem::remove_all(storage_location + backup_directory);

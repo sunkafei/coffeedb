@@ -7,6 +7,7 @@ def send(data):
     global total
     data = json.dumps(data, indent=4)
     result = requests.post(url, data)
+    assert result.status_code == 200
     # result.text
 def insert():
     val = ''.join(chr(random.randint(ord('a'), ord('z'))) for i in range(256))
