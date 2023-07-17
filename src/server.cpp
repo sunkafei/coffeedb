@@ -8,7 +8,11 @@
 #include "database.h"
 httplib::Server server;
 void start_server() {
+#ifdef __WIN32__
+    FILE *output = _popen("dig +short myip.opendns.com @resolver1.opendns.com", "r");
+#else
     FILE *output = popen("dig +short myip.opendns.com @resolver1.opendns.com", "r");
+#endif
     std::string ip;
     for (;;) {
         auto ch = fgetc(output);

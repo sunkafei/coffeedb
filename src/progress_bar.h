@@ -1,6 +1,10 @@
 #ifndef PROGRESS_BAR
 #define PROGRESS_BAR
+#ifdef __WIN32__
+#include <windows.h>
+#else
 #include <sys/ioctl.h>
+#endif
 #include <format>
 #include <cstdio>
 class progress_bar {
@@ -12,9 +16,15 @@ private:
 public:
     progress_bar() = default;
     progress_bar(const std::string& hint) {
+#ifdef __WIN32__
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+        this->width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+#else
         struct winsize size;
         ioctl(STDIN_FILENO, TIOCGWINSZ, &size);
         this->width = size.ws_col;
+#endif
         this->length = std::max(width - ssize(hint) - 8, 1z);
         this->temp = std::format("\r\033[1;36m{}: [{{:<{}}}]{{:3}}%\033[0m", hint, length);
         update(0);
