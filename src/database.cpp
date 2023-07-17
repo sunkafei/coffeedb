@@ -20,6 +20,7 @@ std::map<std::string, std::unique_ptr<index>> indices;
 std::unordered_map<int64_t, std::map<std::string, var>> data;
 std::shared_mutex mutex_data;
 std::shared_mutex mutex_files;
+std::mutex mutex_build;
 class ac_automaton {
 public:
     static constexpr int32_t alphabet_size = 256;
@@ -255,7 +256,7 @@ void build() {
             throw std::runtime_error("Corrupted File: " + path);
         }
     }
-    for (auto &[key, value] : indices) {
+    for (std::lock_guard guard(mutex_build); auto &[key, value] : indices) {
         value->build();
     }
     std::unique_lock lock(mutex_data);

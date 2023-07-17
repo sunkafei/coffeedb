@@ -36,6 +36,7 @@ jobs:
               python examples/example.py
               python test/test-string.py
               python test/test-highlight.py
+              python test/test-concurrency.py
           
             
           
