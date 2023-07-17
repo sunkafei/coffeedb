@@ -149,11 +149,11 @@ public:
     var operator()(const std::string& key, const var &data) const {
         return std::visit([this, &key]<typename T>(const T& value) -> var {
             if constexpr (std::is_same_v<T, std::string>) {
-                return automatons.at(key).render(value, left, right);
+                if (automatons.contains(key)) {
+                    return automatons.at(key).render(value, left, right);
+                }
             }
-            else {
-                return value;
-            }
+            return value;
         }, data);
     }
     var operator()(const auto& pair) const {

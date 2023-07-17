@@ -8,11 +8,10 @@
 #include "profile.h"
 void test() {
     using namespace nlohmann::literals;
-    system("rm -r backup");
-    system("rm -r raw");
-    json a;
+    clear();
     init();
-    auto response = [](auto &&message) {
+    json a;
+    auto send = [](auto &&message) {
         try {
             print(::response(message));
         }
@@ -21,45 +20,55 @@ void test() {
             error(message);
         }
     };
-    response(R"({
-        "operation":"clear"
-    })"_json);
-    response(R"({
-        "operation":"insert", 
+    send(R"({
+        "operation": "insert",
         "data": {
-            "id": "rr01010r010rrr",
-            "range": 123
+            "number": 123,
+            "name": "sunkafei",
+            "secret": "3010103"
         }
     })"_json);
-    response(R"({
-        "operation":"insert", 
-        "data":{
-            "id": "gh010djf",
-            "name": "smz",
-            "range": 999
+    send(R"({
+        "operation": "insert",
+        "data": {
+            "number": 234,
+            "name": "yulemao",
+            "position": 1.7724,
+            "secret": "301022"
         }
     })"_json);
-    response(R"({
-        "operation":"build"
+    send(R"({
+        "operation": "build"
     })"_json);
-    response(R"({
+    send(R"({
         "operation": "query",
         "constraints": {
-            "id": "010",
-            "$correlation": " [1,3] "
-        },
-        "fields": ["id", "$correlation"],
-        "highlight": ["<", ">"],
-        "span": " [1,1] "
+            "number": "[100,200]"
+        }
     })"_json);
-    /*response(R"({
+    send(R"({
         "operation": "query",
         "constraints": {
-            "id": "cd"
+            "number": "[100,900]"
         },
-        "fields": {"id"}
+        "fields": ["name"]
     })"_json);
-    response(R"({"operation":"query", "constraints":{"id":"[1,20]"},"fields":["id"]})"_json);*/
+    send(R"({
+        "operation": "query",
+        "constraints": {
+            "secret": "010"
+        }
+    })"_json);
+    send(R"({
+        "operation": "query",
+        "constraints": {
+            "secret": "010",
+            "number": "[0,900]"
+        },
+        "fields": ["name", "secret"],
+        "highlight": ["<b>", "</b>"],
+        "span": " [0,1) "
+    })"_json);
 }
 int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"clear"}'

@@ -16,7 +16,7 @@
 - [Benchmark](#benchmark)
 
 ## Get Started
-[Download](https://github.com/sunkafei/coffeedb/releases) CoffeeDB, put it under any folder, run `./coffeedb`, then CoffeeDB will create a database under this folder and start the service. By default, the service address is http://127.0.0.1:14920/coffeedb. All database operations are handled by the Post method of this address.
+[Download](https://github.com/sunkafei/coffeedb/releases) CoffeeDB, put it under any folder, run `./coffeedb`, then CoffeeDB will create a database under this folder and start the service. By default, the service address is http://127.0.0.1:14920/coffeedb. All database operations are handled by the `Post` method of this address.
 
 For example, you can insert a piece of data into the database by sending the following json to http://127.0.0.1:14920/coffeedb.
 ```json
@@ -25,11 +25,11 @@ For example, you can insert a piece of data into the database by sending the fol
     "data": {
         "number": 123,
         "name": "sunkafei",
-        "secret": "01010"
+        "secret": "3010103"
     }
 }
 ```
-Note that the corresponding value of "data" is the inserted object, which can contain any number of key-value pairs, and the type of value can be integer, real number or string.
+Note that the corresponding value of `data` is the inserted object, which can contain any number of key-value pairs, and the type of value can be integer, real number or string.
 
 Next, we insert another piece of data into the database:
 ```json
@@ -39,7 +39,7 @@ Next, we insert another piece of data into the database:
         "number": 234,
         "name": "yulemao",
         "position": 1.7724,
-        "secret": "010"
+        "secret": "301022"
     }
 }
 ```
@@ -60,7 +60,7 @@ Next we can query the database:
 ```
 It returns all objects whose *number* is between $100$ and $200$. The result may look like this:
 ```json
-[{"number":123,"name":"sunkafei","secret":"01010"}]
+[{"number":123,"name":"sunkafei","secret":"301022"}]
 ```
 Note that we can adjust the query to open interval by writing "(100,200)". If you only want to see some keys of the object but not all, you can use `fields` to specify. Here's an example:
 ```json
@@ -87,22 +87,25 @@ In the case of string/keyword searches, an additional key named `$correlation` i
 ```
 The query result is:
 ```json
-[{"$correlation":2,"number":123,"name":"sunkafei","secret":"01010"},{"$correlation":1,"number":234,"name":"yulemao","position":1.7724,"secret":"010"}]
+[{"$correlation":2,"number":123,"name":"sunkafei","secret":"3010103"},{"$correlation":1,"number":234,"name":"yulemao","position":1.7724,"secret":"301022"}]
 ```
-If there are multiple query constraints that need to be met, you can simply list them in `constraints`. For example:
+A more complex query is shown below. Both constraints `"secret":"010"` and `"number":"[0,900]"` must be met.
+The *name* and *secret* fields of objects that meet the constraints will be selected. Then, all `010` in the secret field will be replaced with `<b>010</b>`. Finally, only the first object is returned, as indicated by the `span` field.
 ```json
 {
     "operation": "query",
     "constraints": {
         "secret": "010",
-        "number": "[200,900]"
+        "number": "[0,900]"
     },
-    "fields": ["name"]
+    "fields": ["name", "secret"],
+    "highlight": ["<b>", "</b>"],
+    "span": "[0,1)"
 }
 ```
 The query result is:
 ```json
-[{"name":"yulemao"}]
+[{"name":"sunkafei","secret":"3<b>01010</b>3"}]
 ```
 You can find a sample Python code [here](examples/examples.py).
 
@@ -164,10 +167,18 @@ The `query` operation has the following general format:
     },
     "fields": [
         ...
-    ]
+    ],
+    "highlight": [
+        left-padding,
+        right-padding
+    ],
+    "span": interval
 }
 ```
-All obejcts that meet the constraints in `constraints` will be selected, and then their fields in `fields` will be filtered out and returned. You can get all objects in the database by omitting `constraints`, and you can get all fields in objects by omitting `fields`.
+Only the `operation` field is required, and the rest are optional.
+All obejcts that meet the constraints in `constraints` will be selected, and then their fields in `fields` will be filtered out. All objects will be sorted according to the matching correlation. If the `highlight` field is specified, all occurrences of the query keywords will be surrounded by *left-padding* and *right-padding*. If the `span` field is specified, only objects whose indices are in *interval* will be returned.
+
+You can get all objects in the database by omitting `constraints`, and you can get all fields in objects by omitting `fields`.
 
 For fields of string type, the constraint can be a substring that must appear. In this case, an additional field named `$correlation` will be added to the returned object to indicate the number of occurrences of this substring.
 

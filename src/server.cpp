@@ -25,10 +25,10 @@ void start_server() {
     if (!server.is_valid()) {
         throw std::runtime_error("Server has an error");
     }
-    server.set_error_handler([](const httplib::Request & /*req*/, httplib::Response &res) {
+    /*server.set_error_handler([](const httplib::Request&, httplib::Response &res) {
         auto message = std::format("<p>Error Status: <span style='color:red;'>{}</span></p>", res.status);
         res.set_content(message, "text/html");
-    });
+    });*/
     server.Post("/coffeedb", [](const httplib::Request &req, httplib::Response &res) {
         try {
             std::string reply = response(json::parse(req.body));

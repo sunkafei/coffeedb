@@ -186,12 +186,17 @@ std::string response(json command) {
         }
         std::string left, right;
         if (command.contains("highlight")) {
-            auto list = command.at("highlight").template get<std::vector<std::string>>();
-            if (list.size() != 2) {
-                throw std::runtime_error("Invalid format of \"highlight\"");
+            try {
+                auto list = command.at("highlight").template get<std::vector<std::string>>();
+                if (list.size() != 2) {
+                    throw std::runtime_error("");
+                }
+                left = list[0];
+                right = list[1];
             }
-            left = list[0];
-            right = list[1];
+            catch (...) {
+                throw std::runtime_error("The format of \"highlight\" must be [left-padding, right-padding]");
+            }
             command.erase(command.find("highlight"));
         }
         else {
@@ -203,7 +208,11 @@ std::string response(json command) {
                 result.clear();
             }
             else {
-                result = { result.begin() + range.first, std::min(result.begin() + range.second, result.end()) };
+                auto end = result.end();
+                if (range.second < ssize(result)) {
+                    end = result.begin() + range.second;
+                }
+                result = { result.begin() + range.first, end };
             }
             command.erase(command.find("span"));
         }

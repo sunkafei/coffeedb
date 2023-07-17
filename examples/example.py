@@ -16,7 +16,7 @@ send({
     "data": {
         "number": 123,
         "name": "sunkafei",
-        "secret": "01010"
+        "secret": "3010103"
     }
 })
 send({
@@ -25,7 +25,7 @@ send({
         "number": 234,
         "name": "yulemao",
         "position": 1.7724,
-        "secret": "010"
+        "secret": "301022"
     }
 })
 send({
@@ -55,7 +55,9 @@ send({
     "operation": "query",
     "constraints": {
         "secret": "010",
-        "number": "[200,900]"
+        "number": "[0,900]"
     },
-    "fields": ["name"]
+    "fields": ["name", "secret"],
+    "highlight": ["<b>", "</b>"],
+    "span": "[0,1)"
 })
