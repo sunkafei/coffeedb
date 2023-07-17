@@ -19,7 +19,7 @@
 [Download](https://github.com/sunkafei/coffeedb/releases) CoffeeDB, put it under any folder, run `./coffeedb`, then CoffeeDB will create a database under this folder and start the service. By default, the service address is http://127.0.0.1:14920/coffeedb. All database operations are handled by the `Post` method of this address.
 
 For example, you can insert a piece of data into the database by sending the following json to http://127.0.0.1:14920/coffeedb.
-```json
+```javascript
 {
     "operation": "insert",
     "data": {
@@ -32,7 +32,7 @@ For example, you can insert a piece of data into the database by sending the fol
 Note that the corresponding value of `data` is the inserted object, which can contain any number of key-value pairs, and the type of value can be integer, real number or string.
 
 Next, we insert another piece of data into the database:
-```json
+```javascript
 {
     "operation": "insert",
     "data": {
@@ -44,13 +44,13 @@ Next, we insert another piece of data into the database:
 }
 ```
 As we can seen, different objects can contain different fields, but the same fields must be of the same type. After we finish modifying the database, we need to call the build operation to create the corresponding data structure and make the modification take effect:
-```json
+```javascript
 {
     "operation": "build"
 }
 ```
 Next we can query the database:
-```json
+```javascript
 {
     "operation": "query",
     "constraints": {
@@ -59,11 +59,11 @@ Next we can query the database:
 }
 ```
 It returns all objects whose *number* is between $100$ and $200$. The result may look like this:
-```json
+```javascript
 [{"number":123,"name":"sunkafei","secret":"301022"}]
 ```
 Note that we can adjust the query to open interval by writing "(100,200)". If you only want to see some keys of the object but not all, you can use `fields` to specify. Here's an example:
-```json
+```javascript
 {
     "operation": "query",
     "constraints": {
@@ -73,11 +73,11 @@ Note that we can adjust the query to open interval by writing "(100,200)". If yo
 }
 ```
 The query result is:
-```json
+```javascript
 [{"name":"sunkafei"},{"name":"yulemao"}]
 ```
 In the case of string/keyword searches, an additional key named `$correlation` is added to the object to indicate the number of occurrences of the keyword. For example:
-```json
+```javascript
 {
     "operation": "query",
     "constraints": {
@@ -86,12 +86,12 @@ In the case of string/keyword searches, an additional key named `$correlation` i
 }
 ```
 The query result is:
-```json
+```javascript
 [{"$correlation":2,"number":123,"name":"sunkafei","secret":"3010103"},{"$correlation":1,"number":234,"name":"yulemao","position":1.7724,"secret":"301022"}]
 ```
 A more complex query is shown below. Both constraints `"secret":"010"` and `"number":"[0,900]"` must be met.
 The *name* and *secret* fields of objects that meet the constraints will be selected. Then, all `010` in the secret field will be replaced with `<b>010</b>`. Finally, only the first object is returned, as indicated by the `span` field.
-```json
+```javascript
 {
     "operation": "query",
     "constraints": {
@@ -104,7 +104,7 @@ The *name* and *secret* fields of objects that meet the constraints will be sele
 }
 ```
 The query result is:
-```json
+```javascript
 [{"name":"sunkafei","secret":"3<b>01010</b>3"}]
 ```
 You can find a sample Python code [here](examples/examples.py).
@@ -126,7 +126,7 @@ $ ./coffeedb --port=12345 --clear
 ## Supported Operations
 ### Insert
 The `insert` operation has the following general format:
-```json
+```javascript
 {
     "operation": "insert",
     "data": {
@@ -138,7 +138,7 @@ where the `data` field contains the object to be inserted. The inserted object c
 
 ### Remove
 The `remove` operation has the following general format:
-```json
+```javascript
 {
     "operation": "remove",
     "constraints": {
@@ -150,7 +150,7 @@ where all objects satisfy the constraints will be removed from the database. The
 
 ### Build
 The `build` operation has the following format:
-```json
+```javascript
 {
     "operation": "build"
 }
@@ -159,7 +159,7 @@ It makes all database modification operations take effect. As the `build` operat
 
 ### Query
 The `query` operation has the following general format:
-```json
+```javascript
 {
     "operation": "query",
     "constraints": {
@@ -191,7 +191,7 @@ For fields of type integer and float, the constraint can be an interval indicati
 
 Multiple conditions can be specified for each field. There is an **OR** relationship between conditions in the same field, and an **AND** relationship between different fields. 
 The following example means: select all objects whose `name` contains "coffee" as a substring and whose `age` is between $[10,20]$ or $[30,40]$.
-```json
+```javascript
 {
     "operation": "query",
     "constraints": {
@@ -205,12 +205,12 @@ The following example means: select all objects whose `name` contains "coffee" a
 You can find more use cases of the `query` operation in [Get Started](#get-started).
 
 ## Benchmark
-We tested the running time of a single keyword query under different data scales. The testing environment consists of 32 CPUs(Intel Cooper Lake 3.0GHz) and 128GB memory.
-|The amount of data|Query time|
-|-|-|
-|1GB|1.2ms|
-|2GB|1.3ms|
-|4GB|1.5ms|
-|8GB|2.0ms|
+We tested the running time of a single keyword query under different data scales. The testing environment consists of 32 CPUs(Intel Cooper Lake 3.0GHz) and 128GB memory. Each character of all strings is randomly generated from `'a'` to `'z'`. In order to ensure that the query results will not be too many or too few, we fix the length of the query string to $5$. As shown in the table below, query times are on the millisecond level, and most of the time is spent on data transfer rather than string retrieval.
+|Number of objects|String length for each object|Total amount of data|Query time|
+|-|-|-|-|
+|32768|32768|1GB|1.2ms|
+|32768|65536|2GB|1.3ms|
+|65536|65536|4GB|1.5ms|
+|65536|131072|8GB|2.0ms|
 
 The test script can be found [here](test/benchmark.py).
