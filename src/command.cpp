@@ -30,8 +30,8 @@ void parse_command(int argc, char *argv[]) {
             if (!std::filesystem::exists(value)) {
                 throw std::runtime_error("Invalid path: " + value);
             }
-            if (!value.ends_with("/")) {
-                value += "/";
+            if (!value.ends_with(seperator)) {
+                value += seperator;
             }
             ::storage_location = value;
         }

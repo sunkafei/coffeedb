@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <charconv>
 #include <regex>
+template<class> inline constexpr bool always_false_v = false;
 auto output(auto&& param) {
     if constexpr (requires {std::cerr << param; }) {
         std::cerr << param;

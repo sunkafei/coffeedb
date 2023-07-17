@@ -277,7 +277,7 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
                     indices[key] = std::make_unique<string_index>();
                 }
                 else {
-                    static_assert(false, "Non-exhaustive visitor!");
+                    static_assert(always_false_v<T>, "Non-exhaustive visitor!");
                 }
             }, value);
         }
@@ -294,7 +294,7 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
                     ptr = dynamic_cast<string_index*>(indices[key].get());
                 }
                 else {
-                    static_assert(false, "Non-exhaustive visitor!");
+                    static_assert(always_false_v<T>, "Non-exhaustive visitor!");
                 }
                 if (!ptr) {
                     throw std::runtime_error(std::format("Mismatched type for \"{}\"", key));
@@ -338,7 +338,7 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
                 fwrite(value.data(), sizeof(char), length, fp);
             }
             else {
-                static_assert(false, "Non-exhaustive visitor!");
+                static_assert(always_false_v<T>, "Non-exhaustive visitor!");
             }
         }, value);
     }

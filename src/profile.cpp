@@ -12,7 +12,7 @@ void profile_string_process() {
     long long total = 0;
     std::string data(10000, '*');
     std::default_random_engine engine;
-    std::uniform_int_distribution gen('a', 'z');
+    std::uniform_int_distribution<int> gen('a', 'z');
     run("free -h");
     response(R"(
         {
