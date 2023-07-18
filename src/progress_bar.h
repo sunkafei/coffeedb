@@ -3,6 +3,7 @@
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 #include <windows.h>
 #undef max
+#undef min
 #else
 #include <sys/ioctl.h>
 #endif
@@ -27,20 +28,23 @@ public:
         this->width = size.ws_col;
 #endif
         this->length = std::max(width - int(hint.size()) - 8, 1);
+        this->length = std::min(this->length, 100);
         this->temp = std::format("\r\033[1;36m{}: [{{:<{}}}]{{:3}}%\033[0m", hint, length);
         update(0);
     }
     void update(double now) {
-        if (now - progress > 0.005) {
-            progress = now;
-            auto str = std::string(int(length * progress), '#');
-            auto args = std::make_format_args(str, int(progress * 100));
-            std::cerr << std::vformat(temp, args);
-            std::cerr.flush();
-        }
-        if (now > 0.9999) {
-            std::cerr << "\r" << std::string(width, ' ') << "\r";
-            std::cerr.flush();
+        if (length > 1) {
+            if (now - progress > 0.005) {
+                progress = now;
+                auto str = std::string(int(length * progress), '#');
+                auto args = std::make_format_args(str, int(progress * 100));
+                std::cerr << std::vformat(temp, args);
+                std::cerr.flush();
+            }
+            if (now > 0.9999) {
+                std::cerr << "\r" << std::string(width, ' ') << "\r";
+                std::cerr.flush();
+            }
         }
     }
 };

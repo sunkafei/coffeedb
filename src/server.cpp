@@ -8,12 +8,25 @@
 #include "database.h"
 httplib::Server server;
 void start_server() {
+    char buffer[1024];
+    std::string ip = "127.0.0.1";
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
-    FILE *output = _popen("curl ipconfig.io", "r");
+    FILE *stream = _popen("ipconfig", "r");
+    while (fgets(buffer, std::ssize(buffer), stream)) {
+        std::string line(buffer);
+        if (line.ends_with('\n')) {
+            line.pop_back();
+        }
+        if (line.find("IPv4") != std::string::npos && line.rfind(':') != std::string::npos) {
+            auto index = line.rfind(':') + 1;
+            while (index < line.size() && std::isspace(line[index])) {
+                index += 1;
+            }
+            ip = line.substr(index);
+        }
+    }
 #else
     FILE *output = popen("dig +short myip.opendns.com @resolver1.opendns.com", "r");
-#endif
-    std::string ip;
     for (;;) {
         auto ch = fgetc(output);
         if (isspace(ch) || ch == EOF) {
@@ -23,6 +36,7 @@ void start_server() {
     }
     if (ip.empty() || ip.find(':') != std::string::npos)
         ip = "127.0.0.1";
+#endif
     print("Starting CoffeeDB ...");
     init();
     build();
