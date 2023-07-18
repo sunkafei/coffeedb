@@ -8,9 +8,9 @@
 #include "database.h"
 httplib::Server server;
 void start_server() {
-    char buffer[1024];
-    std::string ip = "127.0.0.1";
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+    std::string ip = "127.0.0.1";
+    char buffer[1024];
     FILE *stream = _popen("ipconfig", "r");
     while (fgets(buffer, std::ssize(buffer), stream)) {
         std::string line(buffer);
@@ -26,6 +26,7 @@ void start_server() {
         }
     }
 #else
+    std::string ip;
     FILE *output = popen("dig +short myip.opendns.com @resolver1.opendns.com", "r");
     for (;;) {
         auto ch = fgetc(output);
