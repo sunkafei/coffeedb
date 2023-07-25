@@ -13,6 +13,7 @@
   - [Remove](#remove)
   - [Build](#build)
   - [Query](#query)
+  - [Count](#count)
 - [Benchmark](#benchmark)
 
 ## Get Started
@@ -146,7 +147,7 @@ The `remove` operation has the following general format:
     }
 }
 ```
-where all objects satisfy the constraints will be removed from the database. The format of constraints is the same as the format of constraints in [query](#query) operation. Note that all `remove` operations will be cached and will not take effect immediately. To make `remove` operations effective, you need to call the [build](#build) operation.
+where all objects satisfy the `constraints` will be removed from the database. The format of constraints is the same as that in [query](#query) operation. Note that all `remove` operations will be cached and will not take effect immediately. To make `remove` operations effective, you need to call the [build](#build) operation.
 
 ### Build
 The `build` operation has the following format:
@@ -180,11 +181,11 @@ All obejcts that meet the constraints in `constraints` will be selected, and the
 
 You can get all objects in the database by omitting `constraints`, and you can get all fields in objects by omitting `fields`.
 
-The type of constraint must be string or array of strings.
+For different types of fields, `constraints` have different formats:
 
 - For fields of string type, the constraint can be a substring that must appear. In this case, an additional field named `$correlation` will be added to the returned object to indicate the number of occurrences of this substring.
 
-- For fields of boolean type, the constraint must be `"true"` or `"false"`.
+- For fields of boolean type, the constraint must be "true" or "false".
 
 - For fields of type integer and float, the constraint can be an interval indicating the range of numbers. For example:
 
@@ -194,7 +195,7 @@ The type of constraint must be string or array of strings.
     |[1,inf)|Values greater than $1$ (inclusive).|
     |[-inf,1)|Values less than $1$ (exclusive).|
 
-Multiple conditions can be specified for each field. There is an **OR** relationship between conditions in the same field, and an **AND** relationship between different fields. 
+Multiple constraints can be specified for each field. There is an **OR** relationship between conditions in the same field, and an **AND** relationship between different fields. 
 The following example means: select all objects whose `name` contains "coffee" as a substring and whose `age` is between $[10,20]$ or $[30,40]$.
 ```javascript
 {
@@ -206,8 +207,20 @@ The following example means: select all objects whose `name` contains "coffee" a
 }
 ```
 
-
 You can find more use cases of the `query` operation in [Get Started](#get-started).
+
+### Count
+The `count` operation has the following general format:
+```javascript
+{
+    "operation": "count",
+    "constraints": {
+        ...
+    }
+}
+```
+It returns a json, where the `count` field indicates how many objects satisfy the `constraints` in the database. If no constraints are specified, the total number of objects in the database is returned. The format of `constraints` is the same as that in [query](#query) operation. 
+
 
 ## Benchmark
 We tested the running time of a single keyword query under different data scales. The testing environment consists of 32 CPUs(Intel Cooper Lake 3.0GHz) and 128GB memory. Each character of all strings is randomly generated from `'a'` to `'z'`. In order to ensure that the query results will not be too many or too few, we fix the length of the query string to $5$. As shown in the table below, query times are on the millisecond level, and most of the time is spent on data transfer rather than string retrieval.

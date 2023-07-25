@@ -81,6 +81,9 @@ void test() {
             "bool": "true"
         }
     })"_json);
+    send(R"({
+        "operation": "count"
+    })"_json);
 }
 int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"clear"}'

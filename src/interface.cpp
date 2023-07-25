@@ -238,6 +238,20 @@ std::string response(json command) {
     else if (operation == "build") {
         build();
     }
+    else if (operation == "count") {
+        std::vector<std::pair<std::string, std::vector<std::string>>> constraints;
+        std::vector<std::pair<int64_t, int64_t>> result;
+        if (command.contains("constraints")) {
+            std::tie(constraints, result) = filter(command.at("constraints"));
+            command.erase(command.find("constraints"));
+        }
+        else {
+            result = query();
+        }
+        json j;
+        j["count"] = result.size();
+        ret = j.dump();
+    }
     else if (operation == "clear") {
         clear();
     }
