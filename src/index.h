@@ -5,6 +5,7 @@
 #include <variant>
 #include <memory>
 #include <limits>
+#include <array>
 class index {
 public:
     index(){}
@@ -20,25 +21,35 @@ public:
     }
     virtual ~index() {}
 };
-class integer_index : public index {
+class bool_index : public index {
 private:
-    std::vector<std::pair<int64_t, int64_t>> data;
+    std::array<std::vector<int64_t>, 2> data;
 public:
-    using value_type = int64_t;
+    using value_type = bool;
     static constexpr int8_t number = 0;
-    void add(int64_t id, int64_t value);
+    void add(int64_t id, bool value);
     void build() override;
     std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) const override;
 };
-class double_index : public index {
+class integer_index : public index {
+public:
+    using value_type = int64_t;
+    static constexpr int8_t number = 1;
+    void add(int64_t id, int64_t value);
+    void build() override;
+    std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) const override;
 private:
-    std::vector<std::pair<double, int64_t>> data;
+    std::vector<std::pair<value_type, int64_t>> data;
+};
+class double_index : public index {
 public:
     using value_type = double;
-    static constexpr int8_t number = 1;
+    static constexpr int8_t number = 2;
     void add(int64_t id, double value);
     void build() override;
     std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) const override;
+private:
+    std::vector<std::pair<value_type, int64_t>> data;
 };
 class string_index : public index {
 private:
@@ -62,7 +73,7 @@ private:
     }
 public:
     using value_type = std::string;
-    static constexpr int8_t number = 2;
+    static constexpr int8_t number = 3;
     void add(int64_t id, std::string_view value);
     void build() override;
     std::vector<std::pair<int64_t, int64_t>> query(const std::string &range) const override;

@@ -195,7 +195,22 @@ void build() {
             success |= (fread(key.data(), sizeof(char), length, fp) == sizeof(char) * length);
             int8_t type;
             success |= (fread(&type, sizeof(type), 1, fp) == sizeof(type));
-            if (type == integer_index::number) {
+            if (type == bool_index::number) {
+                bool value;
+                success |= (fread(&value, sizeof(value), 1, fp) == sizeof(value));
+                if (!indices.count(key)) {
+                    indices[key] = std::make_unique<bool_index>();
+                }
+                auto *ptr = dynamic_cast<bool_index*>(indices[key].get());
+                if (!ptr) {
+                    throw std::runtime_error(std::format("Mismatched type for \"{}\"", key));
+                }
+                else {
+                    data[id][key] = value;
+                    ptr->add(id, value);
+                }
+            }
+            else if (type == integer_index::number) {
                 int64_t value;
                 success |= (fread(&value, sizeof(value), 1, fp) == sizeof(value));
                 if (!indices.count(key)) {
@@ -273,7 +288,10 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
         }
         if (!indices.count(key)) {
             std::visit([&key]<typename T>(const T& value){
-                if constexpr (std::is_same_v<T, int64_t>) {
+                if constexpr (Std::is_same_v<T, bool>) {
+                    indices[key] = std::make_unique<bool_index>();
+                }
+                else if constexpr (std::is_same_v<T, int64_t>) {
                     indices[key] = std::make_unique<integer_index>();
                 }
                 else if constexpr (std::is_same_v<T, double>) {
@@ -291,6 +309,9 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
             std::visit([&key]<typename T>(const T& value){
                 void *ptr = nullptr;
                 if constexpr (std::is_same_v<T, int64_t>) {
+                    ptr = dynamic_cast<bool_index*>(indices[key].get());
+                }
+                else if constexpr (std::is_same_v<T, int64_t>) {
                     ptr = dynamic_cast<integer_index*>(indices[key].get());
                 }
                 else if constexpr (std::is_same_v<T, double>) {
@@ -326,7 +347,12 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
         fwrite(key.data(), sizeof(char), length, fp);
         std::visit([fp](auto &&value) {
             using T = std::decay_t<decltype(value)>;
-            if constexpr (std::is_same_v<T, int64_t>) {
+            if constexpr (std::is_same_v<T, bool>) {
+                const int8_t type = bool_index::number;
+                fwrite(&type, sizeof(type), 1, fp);
+                fwrite(&value, sizeof(value), 1, fp);
+            }
+            else if constexpr (std::is_same_v<T, int64_t>) {
                 const int8_t type = integer_index::number;
                 fwrite(&type, sizeof(type), 1, fp);
                 fwrite(&value, sizeof(value), 1, fp);

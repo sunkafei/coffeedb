@@ -20,19 +20,17 @@ std::default_random_engine engine;
 std::queue<std::tuple<void*, void*, int64_t>> segments;
 int64_t chuck_size, rest, total;
 progress_bar bar;
-void integer_index::add(int64_t id, int64_t value) {
-    data.emplace_back(value, id);
-}
-void integer_index::build() {
-    std::sort(data.begin(), data.end());
-    data.shrink_to_fit();
-}
-void double_index::add(int64_t id, double value) {
-    data.emplace_back(value, id);
-}
-void double_index::build() {
-    std::sort(data.begin(), data.end());
-    data.shrink_to_fit();
+std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const std::string &range) {
+    using T = std::decay_t<decltype(data[0].first)>;
+    auto [L, R] = parse_range<T>(range);
+    auto begin = std::lower_bound(data.begin(), data.end(), L);
+    auto end = std::lower_bound(data.begin(), data.end(), R);
+    std::vector<std::pair<int64_t, int64_t>> ret;
+    ret.reserve(end - begin);
+    for (auto iter = begin; iter != end; ++iter) {
+        ret.emplace_back(iter->second, 0);
+    }
+    return ret;
 }
 template<typename T> void string_index::parallel_sort() const {
     int64_t right[256 + 8], pos[256 + 8];
@@ -93,6 +91,51 @@ template<typename T> void string_index::parallel_sort() const {
         condition_variable.notify_one();
         condition_variable.notify_one();
     }
+}
+void bool_index::add(int64_t id, bool value) {
+    data[value].push_back(id);
+}
+void bool_index::build() {
+    data[0].shrink_to_fit();
+    data[1].shrink_to_fit();
+}
+std::vector<std::pair<int64_t, int64_t>> bool_index::query(const std::string &range) const {
+    const std::vector<int64_t> *vec_ptr = nullptr;
+    std::vector<std::pair<int64_t, int64_t>> ret;
+    if (range == "false") {
+        vec_ptr = &data[0];
+    }
+    else if (range == "true") {
+        vec_ptr = &data[1];
+    }
+    else {
+        throw std::runtime_error("Invalid query: " + range);
+    }
+    ret.reserve(vec_ptr->size());
+    for (auto id : *vec_ptr) {
+        ret.emplace_back(id, 0);
+    }
+    return ret;
+}
+void integer_index::add(int64_t id, int64_t value) {
+    data.emplace_back(value, id);
+}
+void integer_index::build() {
+    std::sort(data.begin(), data.end());
+    data.shrink_to_fit();
+}
+std::vector<std::pair<int64_t, int64_t>> integer_index::query(const std::string &range) const {
+    return numeric_query(data, range);
+}
+void double_index::add(int64_t id, double value) {
+    data.emplace_back(value, id);
+}
+void double_index::build() {
+    std::sort(data.begin(), data.end());
+    data.shrink_to_fit();
+}
+std::vector<std::pair<int64_t, int64_t>> double_index::query(const std::string &range) const {
+    return numeric_query(data, range);
 }
 void string_index::add(int64_t id, std::string_view value) {
     ids.push_back(id);
@@ -157,24 +200,6 @@ void string_index::build() {
             return suffix(i) < suffix(j);
         });*/
     }, sa);
-}
-std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const std::string &range) {
-    using T = std::decay_t<decltype(data[0].first)>;
-    auto [L, R] = parse_range<T>(range);
-    auto begin = std::lower_bound(data.begin(), data.end(), L);
-    auto end = std::lower_bound(data.begin(), data.end(), R);
-    std::vector<std::pair<int64_t, int64_t>> ret;
-    ret.reserve(end - begin);
-    for (auto iter = begin; iter != end; ++iter) {
-        ret.emplace_back(iter->second, 0);
-    }
-    return ret;
-}
-std::vector<std::pair<int64_t, int64_t>> integer_index::query(const std::string &range) const {
-    return numeric_query(data, range);
-}
-std::vector<std::pair<int64_t, int64_t>> double_index::query(const std::string &range) const {
-    return numeric_query(data, range);
 }
 std::vector<std::pair<int64_t, int64_t>> string_index::query(const std::string &keyword) const {
     std::vector<std::pair<int64_t, int64_t>> ret;

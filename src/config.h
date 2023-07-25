@@ -4,7 +4,7 @@
 #include <variant>
 #include <cstdint>
 #include <filesystem>
-using var = std::variant<int64_t, double, std::string>;
+using var = std::variant<bool, int64_t, double, std::string>;
 inline constexpr std::string key_correlation("$correlation");
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 constexpr std::string seperator("\\");

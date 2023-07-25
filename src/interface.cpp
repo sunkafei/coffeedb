@@ -139,7 +139,10 @@ std::string response(json command) {
         auto data = command.at("data");
         std::vector<std::pair<std::string, var>> object;
         for (const auto& item : data.items()) {
-            if (item.value().is_number_integer()) {
+            if (item.value().is_boolean()) {
+                object.emplace_back(item.key(), item.value().template get<bool>());
+            }
+            else if (item.value().is_number_integer()) {
                 object.emplace_back(item.key(), item.value().template get<int64_t>());
             }
             else if (item.value().is_number_float()) {
