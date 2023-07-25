@@ -12,4 +12,5 @@ void remove(const std::vector<std::pair<int64_t, int64_t>>& result);
 void build();
 void clear();
 void init();
+void backup();
 #endif

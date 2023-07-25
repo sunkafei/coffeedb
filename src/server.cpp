@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <httplib.h>
 #include <cctype>
+#include <thread>
 #include "config.h"
 #include "interface.h"
 #include "database.h"
@@ -71,6 +72,16 @@ void start_server() {
     };
     server.Get("/", response_get);
     server.Get("/coffeedb", response_get);
+
+    std::thread backup_thread([]() {
+        using namespace std::chrono_literals;
+        for (;;) {
+            std::this_thread::sleep_for(1s * 24 * 60 * 60);
+            backup();
+        }
+    });
+    backup_thread.detach();
+
     print(std::format("Working directory: {}", ::storage_location));
     print(std::format("Running at http://{}:{}/coffeedb", ip, ::port));
     if (!server.listen("0.0.0.0", ::port)) {

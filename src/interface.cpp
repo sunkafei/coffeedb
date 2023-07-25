@@ -11,10 +11,6 @@
 #include "utility.h"
 #include "config.h"
 #include "database.h"
-void backup(int64_t timestamp, const json &command) {
-    std::ofstream file(storage_location + backup_directory + std::to_string(timestamp));
-    file << command << std::endl;
-}
 json jsonify(const auto& object) {
     json j;
     for (const auto &[key, value] : object) {
@@ -152,7 +148,6 @@ std::string response(json command) {
     }
     std::string operation = command.at("operation");
     command.erase(command.find("operation"));
-    backup(timestamp, command);
     if (operation == "insert") {
         auto data = command.at("data");
         std::vector<std::pair<std::string, var>> object;

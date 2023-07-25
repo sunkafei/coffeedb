@@ -13,6 +13,8 @@
 #include <mutex>
 #include <shared_mutex>
 #include <queue>
+#include <chrono>
+#include <ranges>
 #include "config.h"
 #include "utility.h"
 #include "index.h"
@@ -449,4 +451,18 @@ void clear() {
     std::filesystem::create_directory(storage_location + raw_directory);
     std::filesystem::remove_all(storage_location + backup_directory);
     std::filesystem::create_directory(storage_location + backup_directory);
+}
+void backup() {
+    std::chrono::time_point<std::chrono::utc_clock> timestamp = std::chrono::utc_clock::now();
+    auto cmd = std::format("zip -q -j -r {}{:%F%z}.zip {}", storage_location + backup_directory, timestamp, storage_location + raw_directory);
+    std::unique_lock lock(mutex_files);
+    system(cmd.c_str());
+    std::vector<std::string> paths;
+    for (const auto &e : std::filesystem::directory_iterator(storage_location + backup_directory)) {
+        paths.push_back(e.path().lexically_normal().string());
+    }
+    std::ranges::sort(paths);
+    for (int i = 0; i < ssize(paths) - 7; ++i) {
+        std::filesystem::remove(paths[i]);
+    }
 }
