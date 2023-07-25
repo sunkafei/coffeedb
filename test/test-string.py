@@ -10,8 +10,7 @@ def send(data):
     now = time()
     result = requests.post(url, data)
     total += time() - now
-    if result.text:
-        return json.loads(result.text)
+    return json.loads(result.text)
 def count(str, sub):
     ret = 0
     for i in range(0, len(str) - len(sub) + 1):

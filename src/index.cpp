@@ -109,7 +109,7 @@ std::vector<std::pair<int64_t, int64_t>> bool_index::query(const std::string &ra
         vec_ptr = &data[1];
     }
     else {
-        throw std::runtime_error("Invalid query: " + range);
+        throw std::runtime_error(std::format("Invalid query: \"{}\"", range));
     }
     ret.reserve(vec_ptr->size());
     for (auto id : *vec_ptr) {

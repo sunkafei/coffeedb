@@ -7,8 +7,7 @@ def send(data):
     global total
     data = json.dumps(data, indent=4)
     result = requests.post(url, data)
-    if result.text:
-        return json.loads(result.text)
+    return json.loads(result.text)
 send({
     "operation": "clear"
 })

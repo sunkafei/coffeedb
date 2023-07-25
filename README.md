@@ -147,7 +147,7 @@ The `remove` operation has the following general format:
     }
 }
 ```
-where all objects satisfy the `constraints` will be removed from the database. The format of constraints is the same as that in [query](#query) operation. Note that all `remove` operations will be cached and will not take effect immediately. To make `remove` operations effective, you need to call the [build](#build) operation.
+where all objects satisfy the `constraints` will be removed from the database. The `count` field in the returned json indicates the number of objects that have been removed. The format of constraints is the same as that in [query](#query) operation. Note that all `remove` operations will be cached and will not take effect immediately. To make `remove` operations effective, you need to call the [build](#build) operation.
 
 ### Build
 The `build` operation has the following format:

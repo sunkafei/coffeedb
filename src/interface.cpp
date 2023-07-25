@@ -24,14 +24,30 @@ json jsonify(const auto& object) {
     }
     return j;
 }
+auto get_constraints(const json &data) {
+    std::vector<std::pair<std::string, std::vector<std::string>>> ret;
+    const auto &items = data.items();
+    for (auto iter = items.begin(); iter != items.end(); ++iter) {
+        const auto &item = *iter;
+        if (item.value().is_array()) {
+            ret.emplace_back(item.key(), item.value().template get<std::vector<std::string>>());
+        }
+        else if (item.value().is_string()) {
+            ret.emplace_back(item.key(), std::vector<std::string>(1, item.value().template get<std::string>()));
+        }
+        else {
+            throw std::runtime_error(std::format("The constraint type of \"{}\" must be string or array of strings", item.key()));
+        }
+    }
+    return ret;
+}
 auto filter(const json &data) {
     std::optional<std::pair<int64_t, int64_t>> correlation_range;
     std::vector<std::pair<int64_t, int64_t>> answer;
-    std::vector<std::pair<std::string, std::vector<std::string>>> constraints;
     bool first = true;
     const auto &items = data.items();
     if (items.begin() == items.end()) { // No constraints
-        return std::make_pair(constraints, query());
+        return query();
     }
     for (auto iter = items.begin(); iter != items.end(); ++iter) {
         const auto &item = *iter;
@@ -115,7 +131,6 @@ auto filter(const json &data) {
             }
             answer = std::move(tmp);
         }
-        constraints.emplace_back(item.key(), std::move(ranges));
     }
     if (correlation_range) {
         auto [L, R] = *correlation_range;
@@ -127,11 +142,14 @@ auto filter(const json &data) {
     std::sort(answer.begin(), answer.end(), [](auto x, auto y) {
         return x.second > y.second; // Sort in descending order of $correlation.
     });
-    return std::make_pair(constraints, answer);
+    return answer;
 }
 std::string response(json command) {
-    std::string ret;
+    std::string ret = "{}";
     auto timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+    if (!command.is_object()) {
+        throw std::runtime_error("You should pass a json object to CoffeeDB");
+    }
     std::string operation = command.at("operation");
     command.erase(command.find("operation"));
     backup(timestamp, command);
@@ -163,7 +181,8 @@ std::string response(json command) {
         std::vector<std::pair<std::string, std::vector<std::string>>> constraints;
         std::vector<std::pair<int64_t, int64_t>> result;
         if (command.contains("constraints")) {
-            std::tie(constraints, result) = filter(command.at("constraints"));
+            result = filter(command.at("constraints"));
+            constraints = get_constraints(command.at("constraints"));
             command.erase(command.find("constraints"));
         }
         else {
@@ -231,18 +250,20 @@ std::string response(json command) {
             throw std::runtime_error("For security, the remove operation must have a \"constraints\" field");
         }
         auto constraints = command.at("constraints");
-        auto [_, result] = filter(constraints);
+        auto result = filter(constraints);
         remove(result);
         command.erase(command.find("constraints"));
+        json j;
+        j["count"] = result.size();
+        ret = j.dump();
     }
     else if (operation == "build") {
         build();
     }
     else if (operation == "count") {
-        std::vector<std::pair<std::string, std::vector<std::string>>> constraints;
         std::vector<std::pair<int64_t, int64_t>> result;
         if (command.contains("constraints")) {
-            std::tie(constraints, result) = filter(command.at("constraints"));
+            auto result = filter(command.at("constraints"));
             command.erase(command.find("constraints"));
         }
         else {
