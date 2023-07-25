@@ -29,7 +29,7 @@ For example, you can insert a piece of data into the database by sending the fol
     }
 }
 ```
-Note that the corresponding value of `data` is the inserted object, which can contain any number of key-value pairs, and the type of value can be integer, real number or string.
+Note that the corresponding value of `data` is the inserted object, which can contain any number of key-value pairs, and the type of value can be boolean, integer, real number or string.
 
 Next, we insert another piece of data into the database:
 ```javascript
@@ -180,14 +180,19 @@ All obejcts that meet the constraints in `constraints` will be selected, and the
 
 You can get all objects in the database by omitting `constraints`, and you can get all fields in objects by omitting `fields`.
 
-For fields of string type, the constraint can be a substring that must appear. In this case, an additional field named `$correlation` will be added to the returned object to indicate the number of occurrences of this substring.
+The type of constraint must be string or array of strings.
 
-For fields of type integer and float, the constraint can be an interval indicating the range of numbers. For example:
-|Value|Explanation|
-|-|-|
-|[1,100]|Values between $1$ and $100$.|
-|[1,inf)|Values greater than $1$ (inclusive).|
-|[-inf,1)|Values less than $1$ (exclusive).|
+- For fields of string type, the constraint can be a substring that must appear. In this case, an additional field named `$correlation` will be added to the returned object to indicate the number of occurrences of this substring.
+
+- For fields of boolean type, the constraint must be `"true"` or `"false"`.
+
+- For fields of type integer and float, the constraint can be an interval indicating the range of numbers. For example:
+
+    |Value|Explanation|
+    |-|-|
+    |[1,100]|Values between $1$ and $100$.|
+    |[1,inf)|Values greater than $1$ (inclusive).|
+    |[-inf,1)|Values less than $1$ (exclusive).|
 
 Multiple conditions can be specified for each field. There is an **OR** relationship between conditions in the same field, and an **AND** relationship between different fields. 
 The following example means: select all objects whose `name` contains "coffee" as a substring and whose `age` is between $[10,20]$ or $[30,40]$.

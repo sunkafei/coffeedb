@@ -288,7 +288,7 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
         }
         if (!indices.count(key)) {
             std::visit([&key]<typename T>(const T& value){
-                if constexpr (Std::is_same_v<T, bool>) {
+                if constexpr (std::is_same_v<T, bool>) {
                     indices[key] = std::make_unique<bool_index>();
                 }
                 else if constexpr (std::is_same_v<T, int64_t>) {
@@ -308,7 +308,7 @@ void insert(int64_t id, const std::vector<std::pair<std::string, var>> &object) 
         else {
             std::visit([&key]<typename T>(const T& value){
                 void *ptr = nullptr;
-                if constexpr (std::is_same_v<T, int64_t>) {
+                if constexpr (std::is_same_v<T, bool>) {
                     ptr = dynamic_cast<bool_index*>(indices[key].get());
                 }
                 else if constexpr (std::is_same_v<T, int64_t>) {
