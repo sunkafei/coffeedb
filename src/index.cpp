@@ -11,14 +11,54 @@
 #include <thread>
 #include <ranges>
 #include <tuple>
+#include <atomic>
+#include <optional>
 #include "utility.h"
 #include "index.h"
 #include "progress_bar.h"
-std::mutex mutex;
-std::condition_variable condition_variable;
+template<typename T, int maxsize> class lock_free_queue {
+private:
+    struct {
+        T data;
+        std::atomic<bool> ready{false};
+    } nodes[maxsize];
+    std::atomic<int> front;
+    std::atomic<int> rear;
+public:
+    lock_free_queue(): front(0), rear(0) {}
+    void push(T val) {
+        auto pos = rear.fetch_add(1);
+        nodes[pos].data = std::move(val);
+        nodes[pos].ready.store(true);
+    }
+    std::optional<T> pop() {
+        auto pos = front.load();
+        if (pos == rear.load()) {
+            return {};
+        }
+        while (!front.compare_exchange_weak(pos, pos + 1)) {
+            if (pos == rear.load()) {
+                return {};
+            }
+        }
+        while (!nodes[pos].ready.load());
+        nodes[pos].ready.store(false);
+        return nodes[pos].data;
+    }
+    void clear() {
+        int L = front.load(), R = rear.load();
+        for (int i = L; i < R; ++i) {
+            nodes[i].ready.store(false);
+        }
+        front.store(0);
+        rear.store(0);
+    }
+};
+constexpr int MAXSIZE = int(1e6);
+lock_free_queue<std::tuple<void*, void*, int64_t>, MAXSIZE> queue;
+std::atomic<int64_t> rest;
+int64_t chuck_size, total;
 std::default_random_engine engine;
-std::queue<std::tuple<void*, void*, int64_t>> segments;
-int64_t chuck_size, rest, total;
 progress_bar bar;
 std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const std::string &range) {
     using T = std::decay_t<decltype(data[0].first)>;
@@ -34,22 +74,19 @@ std::vector<std::pair<int64_t, int64_t>> numeric_query(const auto &data, const s
 }
 template<typename T> void string_index::parallel_sort() const {
     int64_t right[256 + 8], pos[256 + 8];
-    for (;;) {
-        std::unique_lock lock(mutex);
-        condition_variable.wait(lock, []{ return !segments.empty() || rest == 0; });
-        if (rest == 0) {
-            condition_variable.notify_one();
-            break;
+    while (rest.load()) {
+        auto data = queue.pop();
+        if (!data) {
+            std::this_thread::yield();
+            continue;
         }
-        auto [void_begin, void_end, offset] = segments.front();
+        auto [void_begin, void_end, offset] = *data;
         auto begin = (T*)void_begin, end = (T*)void_end;
         const auto length = end - begin;
-        segments.pop();
         if (length <= chuck_size) {
-            rest -= length;
-            bar.update(1.0 * (total - rest) / total);
+            rest.fetch_sub(length);
+            bar.update(1.0 * (total - rest.load()) / total);
         }
-        lock.unlock();
         if (length <= chuck_size) {
             std::sort(begin, end, [this, offset](auto i, auto j) noexcept {
                 return suffix(i, offset) < suffix(j, offset);
@@ -79,17 +116,14 @@ template<typename T> void string_index::parallel_sort() const {
                     std::swap(begin[i], begin[pos[c]]);
                 }
             }
-            std::lock_guard guard(mutex);
-            rest -= right[0];
-            bar.update(1.0 * (total - rest) / total);
+            rest.fetch_sub(right[0]);
+            bar.update(1.0 * (total - rest.load()) / total);
             for (int i = 1; i < std::ssize(right); ++i) {
                 if (right[i] - right[i - 1] > 0) {
-                    segments.emplace(begin + right[i - 1], begin + right[i], offset + 1);
+                    queue.push(std::make_tuple(begin + right[i - 1], begin + right[i], offset + 1));
                 }
             }
         }
-        condition_variable.notify_one();
-        condition_variable.notify_one();
     }
 }
 void bool_index::add(int64_t id, bool value) {
@@ -179,12 +213,11 @@ void string_index::build() {
                 *pointer++ = ((j << bits) | i);
             }
         }
-        while (segments.size()) {
-            segments.pop();
-        }
-        segments.emplace(sa, sa + size, 0);
+        queue.clear();
+        queue.push(std::make_tuple(sa, sa + size, 0));
         chuck_size = std::max((uint64_t)4096, this->size / 256);
-        rest = total = this->size;
+        total = this->size;
+        rest.store(this->size);
         auto worker = [this](){
             parallel_sort<T>();
         };
