@@ -14,9 +14,15 @@
 json jsonify(const auto& object) {
     json j;
     for (const auto &[key, value] : object) {
-        std::visit([&j, &key](auto && value) {
+        using type = std::decay_t<decltype(value)>;
+        if constexpr (std::is_same_v<type, var>) {
+            std::visit([&j, &key](auto && value) {
+                j[key] = value;
+            }, value);
+        }
+        else {
             j[key] = value;
-        }, value);
+        }
     }
     return j;
 }
@@ -240,6 +246,31 @@ std::string response(json command) {
         }
         ret = L.dump();
     }
+    else if (operation == "cluster") {
+        std::vector<std::pair<std::string, std::vector<std::string>>> constraints;
+        std::vector<std::pair<int64_t, int64_t>> result;
+        if (command.contains("constraints")) {
+            result = filter(command.at("constraints"));
+            constraints = get_constraints(command.at("constraints"));
+            command.erase(command.find("constraints"));
+        }
+        else {
+            result = query();
+        }
+        std::string field;
+        if (command.contains("field")) {
+            if (command["field"].is_string()) {
+                field = command["field"];
+            }
+            else {
+                throw std::runtime_error("The type of field must be string");
+            }
+            command.erase(command.find("field"));
+        }
+        auto list = cluster(result, field);
+        auto L = jsonify(list);
+        ret = L.dump();
+    }
     else if (operation == "remove") {
         if (!command.contains("constraints")) {
             throw std::runtime_error("For security, the remove operation must have a \"constraints\" field");
@@ -258,7 +289,7 @@ std::string response(json command) {
     else if (operation == "count") {
         std::vector<std::pair<int64_t, int64_t>> result;
         if (command.contains("constraints")) {
-            auto result = filter(command.at("constraints"));
+            result = filter(command.at("constraints"));
             command.erase(command.find("constraints"));
         }
         else {

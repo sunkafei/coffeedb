@@ -33,14 +33,17 @@ void test() {
         "data": {
             "number": 234,
             "name": "yulemao",
-            "position": 1.7724,
+            "position": 7724,
             "secret": "301022"
         }
     })"_json);
     send(R"({
         "operation": "insert",
         "data": {
-            "bool": true
+            "number": 234,
+            "name": "yulemao",
+            "position": 456,
+            "secret": "01011010"
         }
     })"_json);
     send(R"({
@@ -60,31 +63,12 @@ void test() {
         "fields": ["name"]
     })"_json);
     send(R"({
-        "operation": "query",
+        "operation": "cluster",
         "constraints": {
-            "secret": "010"
-        }
-    })"_json);
-    send(R"({
-        "operation": "query",
-        "constraints": {
-            "secret": "010",
-            "number": "[0,900]"
+            "number": "[100,900]"
         },
-        "fields": ["name", "secret"],
-        "highlight": ["<b>", "</b>"],
-        "span": " [0,1) "
+        "field": "number"
     })"_json);
-    send(R"({
-        "operation": "query",
-        "constraints": {
-            "bool": true
-        }
-    })"_json);
-    send(R"({
-        "operation": "count"
-    })"_json);
-    send(R"( "123123" )"_json);
 }
 int main(int argc, char *argv[]) {
     // curl http://127.0.0.1:14920/coffeedb -X POST -d '{"operation":"clear"}'

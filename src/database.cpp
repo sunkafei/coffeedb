@@ -439,6 +439,25 @@ std::vector<std::vector<std::pair<const std::string, var>>> select(const std::ve
     }
     return ret;
 }
+std::vector<std::pair<const std::string, int64_t>> cluster(const std::vector<std::pair<int64_t, int64_t>>& results, 
+    const std::string &field) {
+    std::shared_lock lock(mutex_data);
+    std::map<std::string, int64_t> times;
+    for (auto [id, correlation] : results) {
+        auto iter = data[id].find(field);
+        std::visit([&times](auto &&val) {
+            using type = std::decay_t<decltype(val)>;
+            if constexpr (std::is_same_v<type, std::string>) {
+                times[val] += 1;
+            }
+            else {
+                times[std::to_string(val)] += 1;
+            }
+        }, iter->second);
+    }
+    std::vector<std::pair<const std::string, int64_t>> ret(times.begin(), times.end());
+    return ret;
+}
 void remove(const std::vector<std::pair<int64_t, int64_t>>& result) {
     std::unique_lock lock(mutex_files);
     for (auto [id, _] : result) {
